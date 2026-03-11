@@ -1,3 +1,4 @@
+import { exercise1   } from './exercise1.js'
 import { exercise23  } from './exercise23.js'
 import { exercise26a } from './exercise26a.js'
 import { exercise26b } from './exercise26b.js'
@@ -9,6 +10,7 @@ import { exercise26c } from './exercise26c.js'
  * Value = exercise definition object.
  */
 export const exercises = {
+  '1': exercise1,
   '23':  exercise23,
   '26a': exercise26a,
   '26b': exercise26b,

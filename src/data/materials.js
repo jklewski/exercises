@@ -54,6 +54,7 @@ export const TIMBER = {
 export const LOAD_FACTORS = {
   STR_B: { gamma_G: 1.2, gamma_Q: 1.5 },
   STR_A: { gamma_G: 1.35, gamma_Q: 1.5 },
+ 
 }
 
 // Safety class → gamma_d (EKS 11, tabell 1.2)

@@ -78,6 +78,7 @@ export const exercises = { '23': exercise23, '26a': exercise26a, ... }
 |---|---|---|
 | `materials.js` | `CONCRETE`, `REBAR`, `STEEL`, `GLULAM`, `TIMBER`, `LOAD_FACTORS`, `SAFETY_CLASS` | fck/fcd/fctm/Ecm/gamma_btg/CRdc (concrete); fyk/fyd/Es (rebar/steel); fcd/fvd (glulam) |
 | `ipe-sections.js` | `IPE_SECTIONS` | h, b, tf, tw, R, A, Aw, Wy, Zy, Iy, g for IPE80–IPE600 |
+| `loads.js` | `PSI_FACTORS`, `LIVE_LOADS` | ψ₀/ψ₁/ψ₂ per load type (SS-EN 1990 NA); qk/Qk per category A–G (SS-EN 1991-1-1) |
 
 Usage: `const concrete = CONCRETE['C30']` then `...concrete` in params.
 
@@ -122,6 +123,14 @@ Props: `b`, `h`, `fillColor?`, `rebars?` — rebars as `[{ x, y }]` with 0–1 f
 
 ### `IPESection`
 Props: `h`, `b`, `tf`, `tw` — renders I-beam with dimension labels
+
+### `PsiFactorsTable`
+Props: `highlight?` — category string for row highlighting (e.g. `'snö'`, `'kontor'`)
+Renders ψ₀/ψ₁/ψ₂ table per load type (SS-EN 1990, Tab. NA.A1.1). Figure type: `'psi-factors'`.
+
+### `LiveLoadTable`
+Props: `highlight?` — category code for row highlighting (e.g. `'B'`, `'C1'`)
+Renders characteristic imposed loads qk/Qk per building category (SS-EN 1991-1-1). Figure type: `'live-loads'`.
 
 ### `GlulamSection`
 Props: `b`, `h`, `laminationThickness?` (default 45 mm) — alternating lamination bands

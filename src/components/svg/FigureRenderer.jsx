@@ -11,6 +11,8 @@ import IPESection        from './IPESection.jsx'
 import RectSection       from './RectSection.jsx'
 import GlulamSection     from './GlulamSection.jsx'
 import MomentDiagramSVG from './MomentDiagramSVG.jsx'
+import PsiFactorsTable   from './PsiFactorsTable.jsx'
+import LiveLoadTable     from './LiveLoadTable.jsx'
 
 const REGISTRY = {
   'beam':             BeamSVG,
@@ -18,6 +20,8 @@ const REGISTRY = {
   'rect-section':     RectSection,
   'glulam-section':   GlulamSection,
   'moment-diagram':   MomentDiagramSVG,
+  'psi-factors':      PsiFactorsTable,
+  'live-loads':       LiveLoadTable,
 }
 
 export default function FigureRenderer({ figure }) {
