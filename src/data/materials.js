@@ -21,11 +21,11 @@ export const REBAR = {
 // ── Concrete (EN 1992, characteristic cylinder strength) ─────────────────
 // fcd = alpha_cc * fck / gamma_C, with alpha_cc = 1.0, gamma_C = 1.5
 export const CONCRETE = {
-  C20: { fck: 20, fcd: 13.3, fctm: 2.2, Ecm: 30000, gamma_btg: 24, CRdc: 0.18 / 1.5 },
-  C25: { fck: 25, fcd: 16.7, fctm: 2.6, Ecm: 31000, gamma_btg: 24, CRdc: 0.18 / 1.5 },
-  C30: { fck: 30, fcd: 20.0, fctm: 2.9, Ecm: 33000, gamma_btg: 24, CRdc: 0.18 / 1.5 },
-  C35: { fck: 35, fcd: 23.3, fctm: 3.2, Ecm: 34000, gamma_btg: 24, CRdc: 0.18 / 1.5 },
-  C40: { fck: 40, fcd: 26.7, fctm: 3.5, Ecm: 35000, gamma_btg: 24, CRdc: 0.18 / 1.5 },
+  C20: { fck: 20, fcd: 13.3, fctm: 2.2, Ecm: 30000, gamma_btg: 1.5, CRdc: 0.18 / 1.5 },
+  C25: { fck: 25, fcd: 16.7, fctm: 2.6, Ecm: 31000, gamma_btg: 1.5, CRdc: 0.18 / 1.5 },
+  C30: { fck: 30, fcd: 20.0, fctm: 2.9, Ecm: 33000, gamma_btg: 1.5, CRdc: 0.18 / 1.5 },
+  C35: { fck: 35, fcd: 23.3, fctm: 3.2, Ecm: 34000, gamma_btg: 1.5, CRdc: 0.18 / 1.5 },
+  C40: { fck: 40, fcd: 26.7, fctm: 3.5, Ecm: 35000, gamma_btg: 1.5, CRdc: 0.18 / 1.5 },
 }
 
 // ── Glulam (EN 14080 / Eurocode 5, tabell 4.5) ───────────────────────────

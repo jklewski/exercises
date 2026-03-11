@@ -6,16 +6,18 @@
  *   'ipe-section'  → IPESection     { h, b, tf, tw }
  *   'rect-section' → RectSection    { b, h, rebars?, rebarDia?, fillColor? }
  */
-import BeamSVG        from './BeamSVG.jsx'
-import IPESection     from './IPESection.jsx'
-import RectSection    from './RectSection.jsx'
-import GlulamSection  from './GlulamSection.jsx'
+import BeamSVG           from './BeamSVG.jsx'
+import IPESection        from './IPESection.jsx'
+import RectSection       from './RectSection.jsx'
+import GlulamSection     from './GlulamSection.jsx'
+import MomentDiagramSVG from './MomentDiagramSVG.jsx'
 
 const REGISTRY = {
-  'beam':            BeamSVG,
-  'ipe-section':     IPESection,
-  'rect-section':    RectSection,
-  'glulam-section':  GlulamSection,
+  'beam':             BeamSVG,
+  'ipe-section':      IPESection,
+  'rect-section':     RectSection,
+  'glulam-section':   GlulamSection,
+  'moment-diagram':   MomentDiagramSVG,
 }
 
 export default function FigureRenderer({ figure }) {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Equation from '../../math/Equation.jsx'
+import InlineText from '../../math/InlineText.jsx'
 
 export default function AnswerField({ label, unit, correctAnswer, tolerance = 0.1, hint, onCorrect }) {
   const [inputValue, setInputValue] = useState('')
@@ -67,7 +68,7 @@ export default function AnswerField({ label, unit, correctAnswer, tolerance = 0.
       </div>
 
       {hint && status === 'incorrect' && (
-        <div className="hint-text">Ledtråd: {hint}</div>
+        <div className="hint-text">Ledtråd: <InlineText text={hint} /></div>
       )}
     </div>
   )

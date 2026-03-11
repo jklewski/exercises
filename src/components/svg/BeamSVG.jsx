@@ -15,15 +15,21 @@
  *       { type: 'point', label, x, color? }
  *       x: 0–1 fraction of span
  *
+ *   divisions – optional [d1, d2, ...] span panel lengths in metres.
+ *              When provided, the dimension line shows per-panel labels instead
+ *              of a single total length.
+ *
  * Layout:
  *   UDL rows stack vertically above the beam (top → bottom order).
- *   Point loads are drawn as a single arrow at the specified x position,
- *   reaching down from the top of the load area to the beam.
+ *   Point loads are drawn as a single arrow spanning the full load-area height.
+ *   When both UDL and point loads are present, extra vertical space is reserved
+ *   above the UDL rows so point-load labels don't collide with UDL arrows.
  */
 export default function BeamSVG({
   L = 12,
   supports = { left: 'pin', right: 'roller' },
   loads = [],
+  divisions = null,
 }) {
   const W = 520
   const x0 = 70       // left beam end x
@@ -36,10 +42,18 @@ export default function BeamSVG({
   const rowH   = 28   // height per UDL row
   const rowGap = 2
   const topPad = 18   // space above first load row
-  const numUdlRows = Math.max(udlLoads.length, pointLoads.length > 0 ? 1 : 0)
 
-  const beamY  = topPad + numUdlRows * (rowH + rowGap) + (numUdlRows > 0 ? 4 : 0)
-  const loadAreaTop = topPad  // y where load arrows start
+  // When mixing UDL + point loads, reserve extra space above UDL rows so
+  // the point-load label (rendered above the arrow top) has room to breathe.
+  const ptLabelH = (pointLoads.length > 0 && udlLoads.length > 0) ? 18 : 0
+
+  const numUdlRows = udlLoads.length + (pointLoads.length > 0 && udlLoads.length === 0 ? 1 : 0)
+
+  // UDL rows start below the point-load label reserve area
+  const udlTop = topPad + ptLabelH
+
+  const beamY  = udlTop + numUdlRows * (rowH + rowGap) + (numUdlRows > 0 ? 4 : 0)
+  const loadAreaTop = topPad  // y where point-load arrows start (full height)
 
   // Total SVG height depends on support type
   const supportH = (supports.left === 'fixed' || supports.right === 'fixed') ? 35 : 45
@@ -50,7 +64,7 @@ export default function BeamSVG({
 
   // ── UDL rows ───────────────────────────────────────────────────────────
   function renderUDL(row, rowIndex) {
-    const topY   = topPad + rowIndex * (rowH + rowGap)
+    const topY   = udlTop + rowIndex * (rowH + rowGap)
     const botY   = topY + rowH
     const color  = row.color ?? '#2563eb'
     const xStart = x0 + (row.xStart ?? 0) * beamLen
@@ -87,7 +101,6 @@ export default function BeamSVG({
   function renderPointLoad(load, idx) {
     const ax    = x0 + load.x * beamLen
     const color = load.color ?? '#dc2626'
-    const arrowH = beamY - loadAreaTop
     const topY  = loadAreaTop
     const hs    = 9
 
@@ -186,12 +199,36 @@ export default function BeamSVG({
       {renderSupport(supports.right ?? 'roller',  x1, 'right')}
 
       {/* Dimension line */}
-      <line x1={x0} y1={dimY} x2={x1} y2={dimY} stroke="#6b7280" strokeWidth="1.2" />
-      <line x1={x0} y1={dimY - 5} x2={x0} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
-      <line x1={x1} y1={dimY - 5} x2={x1} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
-      <text x={(x0 + x1) / 2} y={dimY + 14} textAnchor="middle" fontSize="12" fill="#374151">
-        {L} m
-      </text>
+      {divisions ? (() => {
+        const elems = []
+        let cx = 0
+        const tick = (sx) => [
+          <line key={`dt${cx}`} x1={sx} y1={dimY - 5} x2={sx} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />,
+        ]
+        elems.push(...tick(x0))
+        divisions.forEach((d, i) => {
+          const sx = x0 + (cx / L) * beamLen
+          const ex = x0 + ((cx + d) / L) * beamLen
+          elems.push(
+            <line key={`dl${i}`} x1={sx} y1={dimY} x2={ex} y2={dimY} stroke="#6b7280" strokeWidth="1.2" />,
+            <text key={`dlt${i}`} x={(sx + ex) / 2} y={dimY + 14} textAnchor="middle" fontSize="12" fill="#374151">
+              {d} m
+            </text>,
+            <line key={`dtr${i}`} x1={ex} y1={dimY - 5} x2={ex} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />,
+          )
+          cx += d
+        })
+        return elems
+      })() : (
+        <>
+          <line x1={x0} y1={dimY} x2={x1} y2={dimY} stroke="#6b7280" strokeWidth="1.2" />
+          <line x1={x0} y1={dimY - 5} x2={x0} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
+          <line x1={x1} y1={dimY - 5} x2={x1} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
+          <text x={(x0 + x1) / 2} y={dimY + 14} textAnchor="middle" fontSize="12" fill="#374151">
+            {L} m
+          </text>
+        </>
+      )}
     </svg>
   )
 }

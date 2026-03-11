@@ -2,9 +2,13 @@ import { useState } from 'react'
 import StepModule from './StepModule.jsx'
 import FigureRenderer from '../svg/FigureRenderer.jsx'
 import Equation from '../../math/Equation.jsx'
+import InlineText from '../../math/InlineText.jsx'
 
 export default function ExerciseShell({ exercise }) {
-  const { title, params, problem, steps } = exercise
+  const { title, problem, steps } = exercise
+  const params = exercise.derive
+    ? { ...exercise.params, ...exercise.derive(exercise.params) }
+    : exercise.params
   const [answers, setAnswers] = useState({})
   function onAnswer(id, value) {
     setAnswers(prev => ({ ...prev, [id]: value }))
@@ -23,7 +27,7 @@ export default function ExerciseShell({ exercise }) {
       </div>
 
       <div className="problem-statement">
-        <p className="problem-description">{problem.description}</p>
+        <p className="problem-description"><InlineText text={problem.description} /></p>
 
         {figures.length > 0 && (
           <div className="problem-figures">

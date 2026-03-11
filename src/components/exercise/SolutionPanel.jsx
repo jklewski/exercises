@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import SolutionStep from './SolutionStep.jsx'
 
-export default function SolutionPanel({ steps = [] }) {
+export default function SolutionPanel({ steps = [], params }) {
   const [visible, setVisible] = useState(false)
 
   return (
@@ -21,6 +21,8 @@ export default function SolutionPanel({ steps = [] }) {
               text={step.text}
               latex={step.latex}
               latexBlock={step.latexBlock}
+              figure={step.figure}
+              params={params}
             />
           ))}
         </div>

@@ -37,6 +37,9 @@ export const exercise26a = {
           ],
         },
       },
+      {type: 'ipe-section',
+        props:  {h: 360, b: 170, tf: 12.7, tw: 8},
+      }
     ],
 
     givenData: [

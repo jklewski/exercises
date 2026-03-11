@@ -2,6 +2,7 @@ import { useState } from 'react'
 import AnswerField from './AnswerField.jsx'
 import SolutionPanel from './SolutionPanel.jsx'
 import Equation from '../../math/Equation.jsx'
+import InlineText from '../../math/InlineText.jsx'
 
 export default function StepModule({ step, params, answers, onAnswer, index }) {
   const [submitted, setSubmitted] = useState(false)
@@ -14,10 +15,10 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
     <div className="step-module">
       <div className="step-module-header">
         <span className="step-number">{index + 1}</span>
-        <h2 className="step-title">{step.title}</h2>
+        <h2 className="step-title"><InlineText text={step.title} /></h2>
       </div>
 
-      <p className="step-question">{step.question}</p>
+      <p className="step-question"><InlineText text={step.question} /></p>
 
       <div className="step-answer-row">
         <AnswerField
@@ -38,7 +39,7 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
         </div>
       )}
 
-      <SolutionPanel steps={step.solution} />
+      <SolutionPanel steps={step.solution} params={params} />
     </div>
   )
 }
