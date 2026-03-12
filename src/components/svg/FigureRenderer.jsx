@@ -13,6 +13,7 @@ import GlulamSection     from './GlulamSection.jsx'
 import MomentDiagramSVG from './MomentDiagramSVG.jsx'
 import PsiFactorsTable   from './PsiFactorsTable.jsx'
 import LiveLoadTable     from './LiveLoadTable.jsx'
+import Exercise2Figure   from '../../exercises/figures/Exercise2Figure.jsx'
 
 const REGISTRY = {
   'beam':             BeamSVG,
@@ -22,6 +23,7 @@ const REGISTRY = {
   'moment-diagram':   MomentDiagramSVG,
   'psi-factors':      PsiFactorsTable,
   'live-loads':       LiveLoadTable,
+  'ex2-roof':         Exercise2Figure,
 }
 
 export default function FigureRenderer({ figure }) {

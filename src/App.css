@@ -384,6 +384,10 @@
   margin-bottom: 0;
 }
 
+.solution-step .katex-display {
+  margin: 0.2em 0;
+}
+
 .solution-step p {
   margin: 0 0 0.4rem 0;
   color: #334155;

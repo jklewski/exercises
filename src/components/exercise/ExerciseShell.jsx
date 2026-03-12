@@ -14,10 +14,15 @@ export default function ExerciseShell({ exercise }) {
     setAnswers(prev => ({ ...prev, [id]: value }))
   }
 
-  // problem.figures can be an array or a function of params
+  // problem.figures / problem.description can be a value or a function of params
   const figures = typeof problem.figures === 'function'
     ? problem.figures(params)
     : (problem.figures ?? [])
+
+  const descRaw = typeof problem.description === 'function'
+    ? problem.description(params)
+    : problem.description
+  const descLines = Array.isArray(descRaw) ? descRaw : [descRaw]
 
   return (
     <div className="exercise-shell">
@@ -27,7 +32,9 @@ export default function ExerciseShell({ exercise }) {
       </div>
 
       <div className="problem-statement">
-        <p className="problem-description"><InlineText text={problem.description} /></p>
+        {descLines.map((line, i) => (
+          <p key={i} className="problem-description"><InlineText text={line} /></p>
+        ))}
 
         {figures.length > 0 && (
           <div className="problem-figures">

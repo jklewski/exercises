@@ -159,11 +159,98 @@ Any registered figure type works inside a solution step.
 
 ---
 
+## Directory Structure
+
+```
+src/
+├── data/                        # Static reference data (no JSX)
+│   ├── loads.js                 # LIVE_LOADS, PSI_FACTORS
+│   ├── materials.js             # CONCRETE, REBAR, STEEL, GLULAM, LOAD_FACTORS, SAFETY_CLASS
+│   └── ipe-sections.js          # IPE section lookup table
+│
+├── math/                        # Math rendering
+│   ├── Equation.jsx             # KaTeX wrapper – inline or block
+│   └── InlineText.jsx           # Splits "$...$" from plain text → renders mixed
+│
+├── components/
+│   ├── exercise/                # Exercise UI
+│   │   ├── ExerciseShell.jsx    # Top-level: header, problem statement, step list
+│   │   ├── StepModule.jsx       # One step: question + answer field + solution panel
+│   │   ├── AnswerField.jsx      # Input + check button + ±10% tolerance
+│   │   ├── SolutionPanel.jsx    # Collapsible wrapper
+│   │   └── SolutionStep.jsx     # One row: text / LaTeX / figure
+│   └── svg/                     # Reusable figure components
+│       ├── FigureRenderer.jsx   # Registry: { type, props } → component
+│       ├── BeamSVG.jsx
+│       ├── MomentDiagramSVG.jsx
+│       ├── IPESection.jsx / IPECrossSection.jsx
+│       ├── GlulamSection.jsx / RectSection.jsx
+│       ├── PsiFactorsTable.jsx
+│       └── LiveLoadTable.jsx
+│
+├── exercises/                   # Exercise definitions (pure JS, no JSX)
+│   ├── index.js                 # Registry – must be updated manually for each new exercise
+│   ├── exercise1.js
+│   ├── exercise2.js
+│   ├── exercise23.js
+│   ├── exercise26a/b/c.js
+│   └── figures/                 # Exercise-specific SVG (not shared)
+│       └── Exercise2Figure.jsx  # Roof elevation + plan; type: 'ex2-roof'
+│
+├── App.jsx                      # Hash router: #2 → exercises['2'] → ExerciseShell
+└── main.jsx
+```
+
+---
+
+## LaTeX / Math in Text Fields
+
+Any string field (`title`, `question`, `description`, `hint`, `text` in solution) supports inline math using `$...$`:
+
+```js
+question: 'Beräkna $q_d$ (kN/m²) för kategori C1.'
+```
+
+For block equations in solution steps, use `latex` with `latexBlock: true`:
+```js
+{ latex: (p) => `q_d = ${p.q_d.toFixed(2)} \\ \\text{kN/m}^2`, latexBlock: true }
+```
+
+`latex` can also be an array for multi-line equations:
+```js
+{ latex: ['line 1', 'line 2'], latexBlock: true }
+```
+
+---
+
+## Exercise-Specific Figures
+
+Put in `src/exercises/figures/`, register in `FigureRenderer.jsx` with a namespaced type:
+```js
+// FigureRenderer.jsx
+import Exercise2Figure from '../../exercises/figures/Exercise2Figure.jsx'
+const REGISTRY = {
+  ...
+  'ex2-roof': Exercise2Figure,
+}
+```
+
+Use `figures` as a function to pass exercise params into figure props:
+```js
+figures: (p) => [
+  { type: 'ex2-roof', props: { span: p.L_balk, sPurlin: p.cc_ås, sBeam: p.cc_balk } }
+]
+```
+
+---
+
 ## Exercises Implemented
 
-| ID | Title | Material | Key formula |
-|---|---|---|---|
-| 26a | Tvärkraft, stål IPE360 | Steel S235 | V_Rd = A_w · f_yd / √3 |
-| 26b | Tvärkraft, limträ GL30c | Glulam | V_Rd = b_e · h · f_vd / 1.5 |
-| 26c | Tvärkraft, armerad betong C30 | RC | EN 1992 eq 6.2 |
-| 23  | Böjmomentsdimensionering, betong C30 | RC | EC2 rectangular stress block |
+| ID  | Title | Topic |
+|---|---|---|
+| 1   | Uppgift 1 – Laster | ULS/SLS design loads, kat. C1 & C3 |
+| 2   | Uppgift 2 – Takbalk | Roof beam loading, elevation + plan figure |
+| 23  | Böjmomentsdimensionering, betong C30 | RC bending, EC2 rectangular stress block |
+| 26a | Tvärkraft, stål IPE360 | Shear, Steel S235, V_Rd = A_w · f_yd / √3 |
+| 26b | Tvärkraft, limträ GL30c | Shear, Glulam, V_Rd = b_e · h · f_vd / 1.5 |
+| 26c | Tvärkraft, armerad betong C30 | Shear, RC, EN 1992 eq 6.2 |
