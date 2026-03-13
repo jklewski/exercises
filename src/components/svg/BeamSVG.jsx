@@ -19,6 +19,11 @@
  *              When provided, the dimension line shows per-panel labels instead
  *              of a single total length.
  *
+ *   overhang  – optional length (metres) the beam extends past the right support.
+ *              When > 0, the right support is drawn at x = L/(L+overhang) along
+ *              the beam, the free tip is at the right end, and the dimension line
+ *              shows two segments: L (span) and overhang (a).
+ *
  * Layout:
  *   UDL rows stack vertically above the beam (top → bottom order).
  *   Point loads are drawn as a single arrow spanning the full load-area height.
@@ -30,11 +35,16 @@ export default function BeamSVG({
   supports = { left: 'pin', right: 'roller' },
   loads = [],
   divisions = null,
+  overhang = 0,
 }) {
   const W = 520
   const x0 = 70       // left beam end x
   const x1 = 450      // right beam end x
   const beamLen = x1 - x0
+
+  const Ltot = L + overhang
+  // x-position of the right support (may differ from x1 when overhang > 0)
+  const xSupRight = overhang > 0 ? x0 + (L / Ltot) * beamLen : x1
 
   const udlLoads   = loads.filter(l => l.type === 'udl')
   const pointLoads = loads.filter(l => l.type === 'point')
@@ -195,11 +205,28 @@ export default function BeamSVG({
       <line x1={x0} y1={beamY} x2={x1} y2={beamY}
         stroke="#1a1a2e" strokeWidth="5" strokeLinecap="round" />
 
-      {renderSupport(supports.left  ?? 'pin',    x0, 'left')}
-      {renderSupport(supports.right ?? 'roller',  x1, 'right')}
+      {renderSupport(supports.left  ?? 'pin',    x0,         'left')}
+      {renderSupport(supports.right ?? 'roller',  xSupRight,  'right')}
 
       {/* Dimension line */}
-      {divisions ? (() => {
+      {overhang > 0 ? (
+        // Two segments: span L (A→B) and overhang a (B→C)
+        <>
+          {/* Span L */}
+          <line x1={x0}         y1={dimY} x2={xSupRight} y2={dimY} stroke="#6b7280" strokeWidth="1.2" />
+          <line x1={x0}         y1={dimY - 5} x2={x0}         y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
+          <line x1={xSupRight}  y1={dimY - 5} x2={xSupRight}  y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
+          <text x={(x0 + xSupRight) / 2} y={dimY + 14} textAnchor="middle" fontSize="12" fill="#374151">
+            {L} m
+          </text>
+          {/* Overhang a */}
+          <line x1={xSupRight} y1={dimY} x2={x1} y2={dimY} stroke="#6b7280" strokeWidth="1.2" />
+          <line x1={x1}        y1={dimY - 5} x2={x1} y2={dimY + 5} stroke="#6b7280" strokeWidth="1.2" />
+          <text x={(xSupRight + x1) / 2} y={dimY + 14} textAnchor="middle" fontSize="12" fill="#374151">
+            {overhang} m
+          </text>
+        </>
+      ) : divisions ? (() => {
         const elems = []
         let cx = 0
         const tick = (sx) => [

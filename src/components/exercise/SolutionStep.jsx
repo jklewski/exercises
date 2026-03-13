@@ -3,9 +3,10 @@ import InlineText      from '../../math/InlineText.jsx'
 import FigureRenderer  from '../svg/FigureRenderer.jsx'
 
 export default function SolutionStep({ text, latex, latexBlock = false, figure, params }) {
-  // text and latex can be plain strings or functions (p) => string
-  const resolvedText  = typeof text  === 'function' ? text(params)  : text
-  const resolvedLatex = typeof latex === 'function' ? latex(params) : latex
+  // text, latex, and figure can be plain values or functions (p) => value
+  const resolvedText   = typeof text   === 'function' ? text(params)   : text
+  const resolvedLatex  = typeof latex  === 'function' ? latex(params)  : latex
+  const resolvedFigure = typeof figure === 'function' ? figure(params) : figure
   const latexLines = resolvedLatex
     ? (Array.isArray(resolvedLatex) ? resolvedLatex : [resolvedLatex])
     : []
@@ -18,9 +19,9 @@ export default function SolutionStep({ text, latex, latexBlock = false, figure, 
           <Equation math={line} block={latexBlock} />
         </div>
       ))}
-      {figure && (
+      {resolvedFigure && (
         <div style={{ margin: '0.5rem 0' }}>
-          <FigureRenderer figure={figure} />
+          <FigureRenderer figure={resolvedFigure} />
         </div>
       )}
     </div>

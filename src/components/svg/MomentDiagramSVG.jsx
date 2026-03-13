@@ -3,35 +3,43 @@
  * statically determinate beam.
  *
  * Props
- *   L          – span in metres
+ *   L          – span in metres (distance between supports)
+ *   overhang   – optional length the beam extends past the right support (default 0).
+ *                When > 0, the beam is an overhanging/propped-cantilever beam:
+ *                  pin at x=0, roller at x=L, free tip at x=L+overhang.
  *   supports   – { left, right } where each is 'pin' | 'roller' | 'fixed' | 'free'
  *                Default: { left: 'pin', right: 'roller' } (simply supported)
  *                'fixed' = wall (provides moment reaction)
- *                'pin' | 'roller' | 'free' = no moment reaction
- *   udl        – [{ q, xStart?, xEnd? }]  kN/m; defaults xStart=0, xEnd=L
- *   pointLoads – [{ P, x }]               kN, metres from left support
+ *   udl        – [{ q, xStart?, xEnd? }]  kN/m; defaults xEnd=L (or L+overhang)
+ *   pointLoads – [{ P, x }]               kN, metres from left end
  *   divisions  – [d1, d2, ...]            optional panel lengths in metres for tick marks
  *   showShear  – show shear-force diagram below the moment diagram (default false)
  *
  * Sign convention:
  *   Positive M = sagging → plots downward (tension side for SS beam)
- *   Negative M = hogging → plots upward  (tension side for cantilever)
+ *   Negative M = hogging → plots upward  (tension side for cantilever/overhang)
  */
 export default function MomentDiagramSVG({
   L,
+  overhang = 0,
   supports = { left: 'pin', right: 'roller' },
   udl = [],
   pointLoads = [],
   divisions = null,
   showShear = false,
 }) {
+  const Ltot = L + overhang   // total beam length
+
   // ── Reactions ─────────────────────────────────────────────────────────────
   let totalLoad = 0
   let momentAboutA = 0
-  for (const { q, xStart = 0, xEnd = L } of udl) {
-    const a = xEnd - xStart
-    totalLoad      += q * a
-    momentAboutA   += q * a * (xStart + a / 2)
+  for (const load of udl) {
+    const q_i      = load.q
+    const xStart_i = load.xStart ?? 0
+    const xEnd_i   = load.xEnd   ?? Ltot
+    const len      = xEnd_i - xStart_i
+    totalLoad    += q_i * len
+    momentAboutA += q_i * len * (xStart_i + len / 2)
   }
   for (const { P, x } of pointLoads) {
     totalLoad    += P
@@ -41,61 +49,78 @@ export default function MomentDiagramSVG({
   const leftFixed  = supports?.left  === 'fixed'
   const rightFixed = supports?.right === 'fixed'
 
-  let R_A, M_A
+  let R_A, M_A, R_B
   if (leftFixed) {
-    // Cantilever: wall at x=0, free at x=L
+    // Cantilever: wall at x=0, free tip at x=Ltot
     R_A = totalLoad
     M_A = -momentAboutA          // hogging (negative) at the fixed end
+    R_B = 0
   } else if (rightFixed) {
-    // Cantilever: free at x=0, wall at x=L
+    // Cantilever: free at x=0, wall at x=Ltot
     R_A = 0
-    M_A = 0                      // formula works naturally from the free end
-  } else {
-    // Simply supported (pin/roller on both sides)
-    R_A = totalLoad - momentAboutA / L
     M_A = 0
+    R_B = 0
+  } else {
+    // Simply supported or overhanging: pin at x=0, roller at x=L
+    R_B  = momentAboutA / L     // roller at x=L (lever arm = L, not Ltot)
+    R_A  = totalLoad - R_B
+    M_A  = 0
   }
 
   // ── M(x) and V(x) ────────────────────────────────────────────────────────
   function M_at(x) {
     let M = M_A + R_A * x
-    for (const { q, xStart = 0, xEnd = L } of udl) {
-      if (x > xStart) {
-        const a = Math.min(x, xEnd) - xStart
-        M -= q * a * (x - xStart - a / 2)
+    for (const load of udl) {
+      const q_i      = load.q
+      const xStart_i = load.xStart ?? 0
+      const xEnd_i   = load.xEnd   ?? Ltot
+      if (x > xStart_i) {
+        const a = Math.min(x, xEnd_i) - xStart_i
+        M -= q_i * a * (x - xStart_i - a / 2)
       }
     }
     for (const { P, x: xP } of pointLoads) {
       if (x > xP) M -= P * (x - xP)
     }
+    // Right support reaction for overhanging beam (roller at x=L)
+    if (overhang > 0 && x > L) M += R_B * (x - L)
     return M
   }
 
   function V_at(x) {
     let V = R_A
-    for (const { q, xStart = 0, xEnd = L } of udl) {
-      if (x > xStart) V -= q * (Math.min(x, xEnd) - xStart)
+    for (const load of udl) {
+      const q_i      = load.q
+      const xStart_i = load.xStart ?? 0
+      const xEnd_i   = load.xEnd   ?? Ltot
+      if (x > xStart_i) V -= q_i * (Math.min(x, xEnd_i) - xStart_i)
     }
     for (const { P, x: xP } of pointLoads) {
       if (x > xP) V -= P
     }
+    // Right support reaction jump for overhanging beam
+    if (overhang > 0 && x > L) V += R_B
     return V
   }
 
   // ── Sample points ─────────────────────────────────────────────────────────
   const N    = 100
-  const grid = Array.from({ length: N + 1 }, (_, i) => (i / N) * L)
-  const keyXs = [0, L, ...pointLoads.map(pl => pl.x)]
+  const grid = Array.from({ length: N + 1 }, (_, i) => (i / N) * Ltot)
+  const keyXs = [0, Ltot, ...pointLoads.map(pl => pl.x)]
+  // Include support B position as a key point when there's an overhang
+  if (overhang > 0) keyXs.push(L)
   if (divisions) {
     let cx = 0
     divisions.forEach(d => { cx += d; keyXs.push(cx) })
   }
   const mXs = [...new Set([...grid, ...keyXs])].sort((a, b) => a - b)
 
-  const eps    = 1e-6
-  const vXs    = [...new Set([
+  const eps = 1e-6
+  const vXs = [...new Set([
     ...mXs,
     ...pointLoads.flatMap(({ x: xP }) => [xP - eps, xP + eps]),
+    // Shear discontinuity at support B for overhanging beam
+    ...(overhang > 0 ? [L - eps, L + eps] : []),
   ])].sort((a, b) => a - b)
 
   const mVals = mXs.map(M_at)
@@ -124,7 +149,7 @@ export default function MomentDiagramSVG({
     ? shearBaseY + vH / 2 + 22
     : beamY + mBelowH + 30
 
-  const toSvgX  = x  => x0 + (x / L) * beamLen
+  const toSvgX  = x  => x0 + (x / Ltot) * beamLen
   const toSvgY  = M  => beamY + M * M_scale          // pos → down, neg → up
 
   // ── SVG paths ─────────────────────────────────────────────────────────────
@@ -134,24 +159,33 @@ export default function MomentDiagramSVG({
     `L ${x1},${beamY} Z`,
   ].join(' ')
 
+  const V_abs  = Math.max(...vVals.map(Math.abs)) || 1
   const vPath = [
     `M ${x0},${shearBaseY}`,
-    ...vXs.map((x, i) => `L ${toSvgX(x).toFixed(1)},${(shearBaseY - vVals[i] * (vH / 2) / (Math.max(...vVals.map(Math.abs)) || 1)).toFixed(1)}`),
+    ...vXs.map((x, i) => `L ${toSvgX(x).toFixed(1)},${(shearBaseY - vVals[i] * (vH / 2) / V_abs).toFixed(1)}`),
     `L ${x1},${shearBaseY} Z`,
   ].join(' ')
 
-  // ── Peak annotation (largest absolute moment) ─────────────────────────────
-  const M_abs_max = Math.max(...mVals.map(Math.abs))
-  const M_peak_i  = mVals.findIndex(m => Math.abs(m) === M_abs_max)
-  const M_peak    = mVals[M_peak_i]
-  const M_peak_sx = toSvgX(mXs[M_peak_i])
-  const M_peak_sy = toSvgY(M_peak)
-  // Label offset: below curve for sagging, above for hogging
-  const labelOffset = M_peak >= 0 ? 24 : -14
-  const labelAnchorY = M_peak_sy + labelOffset
+  // ── Peak annotations ──────────────────────────────────────────────────────
+  // Annotate max absolute moment; also annotate opposite-sign peak when both exist
+  const M_abs_max  = Math.max(...mVals.map(Math.abs))
+  const M_peak_i   = mVals.findIndex(m => Math.abs(m) === M_abs_max)
+  const M_peak     = mVals[M_peak_i]
+  const M_peak_sx  = toSvgX(mXs[M_peak_i])
+  const M_peak_sy  = toSvgY(M_peak)
+  const peakOffset = M_peak >= 0 ? 24 : -14
+
+  // Secondary annotation: opposite-sign peak (only when both sagging + hogging present)
+  const M_sec_val  = M_peak >= 0 ? M_neg : M_pos           // opposite extreme
+  const showSecond = M_pos > 0.5 && M_neg < -0.5 && Math.abs(M_sec_val) > 0.1 * M_abs_max
+  const M_sec_i    = M_peak >= 0
+    ? mVals.indexOf(M_neg)
+    : mVals.indexOf(M_pos)
+  const M_sec_sx   = showSecond ? toSvgX(mXs[M_sec_i])  : 0
+  const M_sec_sy   = showSecond ? toSvgY(M_sec_val)      : 0
+  const secOffset  = M_sec_val >= 0 ? 24 : -14
 
   // ── Shear extremes ────────────────────────────────────────────────────────
-  const V_abs  = Math.max(...vVals.map(Math.abs)) || 1
   const V_scale = (vH / 2) / V_abs
   const V_max_i = vVals.indexOf(Math.max(...vVals))
   const V_min_i = vVals.indexOf(Math.min(...vVals))
@@ -178,6 +212,14 @@ export default function MomentDiagramSVG({
         return elems
       })()}
 
+      {/* ── Support B tick on beam reference line (overhang only) ── */}
+      {overhang > 0 && (
+        <line
+          x1={toSvgX(L)} y1={beamY - 6} x2={toSvgX(L)} y2={beamY + 6}
+          stroke="#6b7280" strokeWidth="1.5"
+        />
+      )}
+
       {/* ── Beam reference line ── */}
       <line x1={x0} y1={beamY} x2={x1} y2={beamY} stroke="#374151" strokeWidth="2" />
       <text x={x0 - 6} y={beamY + 4} textAnchor="end" fontSize="10" fill="#374151">M</text>
@@ -192,18 +234,35 @@ export default function MomentDiagramSVG({
       <path d={mPath} fill="#bfdbfe" stroke="#2563eb" strokeWidth="1.5"
         fillRule="evenodd" opacity="0.92" />
 
-      {/* ── Peak annotation ── */}
+      {/* ── Peak annotation (largest absolute moment) ── */}
       <line
         x1={M_peak_sx} y1={M_peak_sy}
         x2={M_peak_sx} y2={M_peak_sy + (M_peak >= 0 ? 12 : -12)}
         stroke="#1d4ed8" strokeWidth="1" strokeDasharray="3,2"
       />
       <text
-        x={M_peak_sx} y={labelAnchorY}
+        x={M_peak_sx} y={M_peak_sy + peakOffset}
         textAnchor="middle" fontSize="11" fill="#1d4ed8" fontWeight="600"
       >
         {M_peak.toFixed(1)} kNm
       </text>
+
+      {/* ── Secondary peak annotation (opposite-sign peak) ── */}
+      {showSecond && (
+        <>
+          <line
+            x1={M_sec_sx} y1={M_sec_sy}
+            x2={M_sec_sx} y2={M_sec_sy + (M_sec_val >= 0 ? 12 : -12)}
+            stroke="#1d4ed8" strokeWidth="1" strokeDasharray="3,2"
+          />
+          <text
+            x={M_sec_sx} y={M_sec_sy + secOffset}
+            textAnchor="middle" fontSize="11" fill="#1d4ed8" fontWeight="600"
+          >
+            {M_sec_val.toFixed(1)} kNm
+          </text>
+        </>
+      )}
 
       {/* ── Shear diagram (optional) ── */}
       {showShear && (

@@ -20,18 +20,20 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
 
       <p className="step-question"><InlineText text={step.question} /></p>
 
-      <div className="step-answer-row">
-        <AnswerField
-          label={step.answer.label}
-          unit={step.answer.unit}
-          correctAnswer={step.answer.getCorrect(params, answers)}
-          hint={step.answer.hint}
-          onCorrect={(value) => {
-            setSubmitted(true)
-            onAnswer(step.id, value)
-          }}
-        />
-      </div>
+      {step.answer && (
+        <div className="step-answer-row">
+          <AnswerField
+            label={step.answer.label}
+            unit={step.answer.unit}
+            correctAnswer={step.answer.getCorrect(params, answers)}
+            hint={step.answer.hint}
+            onCorrect={(value) => {
+              setSubmitted(true)
+              onAnswer(step.id, value)
+            }}
+          />
+        </div>
+      )}
 
       {result && (
         <div className={`result-badge ${result.ok ? 'ok' : 'not-ok'}`}>

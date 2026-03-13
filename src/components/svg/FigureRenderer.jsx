@@ -10,10 +10,12 @@ import BeamSVG           from './BeamSVG.jsx'
 import IPESection        from './IPESection.jsx'
 import RectSection       from './RectSection.jsx'
 import GlulamSection     from './GlulamSection.jsx'
-import MomentDiagramSVG from './MomentDiagramSVG.jsx'
+import MomentDiagramSVG    from './MomentDiagramSVG.jsx'
+import WeldedISectionSVG   from './WeldedISectionSVG.jsx'
 import PsiFactorsTable   from './PsiFactorsTable.jsx'
 import LiveLoadTable     from './LiveLoadTable.jsx'
 import Exercise2Figure   from '../../exercises/figures/Exercise2Figure.jsx'
+import Exercise14Figure  from '../../exercises/figures/Exercise14Figure.jsx'
 
 const REGISTRY = {
   'beam':             BeamSVG,
@@ -21,9 +23,11 @@ const REGISTRY = {
   'rect-section':     RectSection,
   'glulam-section':   GlulamSection,
   'moment-diagram':   MomentDiagramSVG,
+  'welded-i-section': WeldedISectionSVG,
   'psi-factors':      PsiFactorsTable,
   'live-loads':       LiveLoadTable,
   'ex2-roof':         Exercise2Figure,
+  'ex14-frame':       Exercise14Figure,
 }
 
 export default function FigureRenderer({ figure }) {
