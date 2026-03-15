@@ -24,27 +24,64 @@ export const exercise23 = {
 
   // All intermediate results computed once and merged into p
   derive: (p) => {
-    const R_A     = (p.q_d * p.L + 2 * p.P_d) / 2
-    const x       = p.L / 2
-    const M_Ed    = R_A * x - (p.q_d * x * x) / 2 - p.P_d * (x - p.x1)
-    const d       = p.h - p.c_nom - p.phi / 2
-    const mu      = (M_Ed * 1e6) / (p.b * d * d * p.fcd)
-    const omega   = 1 - Math.sqrt(1 - 2 * mu)
-    const A_s_req = omega * p.b * d * p.fcd / p.fyd
-    return { R_A, M_Ed, d, mu, omega, A_s_req }
+    // ── Loads & moment (N, m → N·m) ────────────────────────────────────
+    const R_A    = (p.q_d * p.L + 2 * p.P_d) / 2
+    const x_beam = p.L / 2
+    const M_Ed   = R_A * x_beam - (p.q_d * x_beam ** 2) / 2 - p.P_d * (x_beam - p.x1)  // N·m
+
+    // ── Section geometry (m) ────────────────────────────────────────────
+    const d = p.h - p.c_nom - p.phi / 2   // m
+
+    // ── Material properties in Pa ───────────────────────────────────────
+    const fcd_Pa = p.fcd * 1e6   // MPa → Pa
+    const fyd_Pa = p.fyd * 1e6
+    const Es_Pa  = p.Es  * 1e6
+
+    // ── Neutral axis from rectangular stress block (all SI: Pa, m, N·m) ─
+    // M_Ed = fcd · b · 0.8x · (d − 0.4x)  →  A·x² + B·x + C = 0
+    const A_q   =  0.32 * fcd_Pa * p.b
+    const B_q   = -0.8  * fcd_Pa * p.b * d
+    const C_q   =  M_Ed
+    const disc  = Math.sqrt(B_q ** 2 - 4 * A_q * C_q)
+    const x_na1 = (-B_q - disc) / (2 * A_q)
+    const x_na2 = (-B_q + disc) / (2 * A_q)
+    const x_na  = [x_na1, x_na2].find(x => x > 0 && x < d)   // m
+
+    // ── Steel strain and stress at ULS ──────────────────────────────────
+    const eps_s   = 3.5e-3 * (d - x_na) / x_na
+    const sigma_s = Math.min(Es_Pa * eps_s, fyd_Pa)            // Pa
+
+    // ── Required steel area (m²) ────────────────────────────────────────
+    const A_s_req = fcd_Pa * p.b * 0.8 * x_na / sigma_s        // m²
+
+    // ── Convenient display units ────────────────────────────────────────
+    const M_Ed_kNm    = M_Ed   / 1e3    // N·m  → kNm
+    const d_mm        = d      * 1e3    // m    → mm
+    const x_na_mm     = x_na   * 1e3   // m    → mm
+    const A_s_req_mm2 = A_s_req * 1e6  // m²   → mm²
+    const n_bars = Math.ceil(A_s_req / ((p.phi/2)**2 * 3.14))
+    return {
+      R_A, M_Ed, M_Ed_kNm,
+      d, d_mm,
+      x_na, x_na_mm, x_na1, x_na2,
+      A_q, B_q, C_q,
+      eps_s, sigma_s,
+      A_s_req, A_s_req_mm2,
+      n_bars,
+    }
   },
 
   params: {
     L:    9,      // m, spännvidd
-    P_d:  75,     // kN, dimensionerande punktlast
-    q_d:  20,     // kN/m, dimensionerande jämnlast (inkl. egentyngd)
+    P_d:  75e3,     // kN, dimensionerande punktlast
+    q_d:  20e3,     // kN/m, dimensionerande jämnlast (inkl. egentyngd)
     x1:   3,      // m, position för vänster punktlast
     x2:   6,      // m, position för höger punktlast
     // Tvärsnitt
-    b:    350,    // mm
-    h:    650,    // mm
-    phi:  16,     // mm, armeringsdiameter
-    c_nom: 26,    // mm, nominellt täckskikt
+    b:    350/1000,    // mm
+    h:    650/1000,    // mm
+    phi:  16/1000,     // mm, armeringsdiameter
+    c_nom: 26/1000,    // m, nominellt täckskikt
     // Betong C30
     ...concrete,  // fck, fcd, fctm, Ecm, gamma_btg, CRdc
     // Armering K500B-T
@@ -74,24 +111,13 @@ export const exercise23 = {
       },
       {
         type: 'rect-section',
-        props: {
-          b: 350,
-          h: 650,
-          fillColor: '#e8e8e8',
-        },
+props: (p) => ({
+  b: p.b * 1000,
+  h: p.h * 1000,
+  fillColor: '#e8e8e8',
+}),
       },
     ],
-
-    //givenData: [
-    //  { name: 'Spännvidd',      symbol: 'L',         value: '9',   unit: 'm'     },
-    //  { name: 'Punktlast',      symbol: 'P_d',        value: '75',  unit: 'kN'    },
-    //  { name: 'Jämnlast',       symbol: 'q_d',        value: '20',  unit: 'kN/m'  },
-    //  { name: 'Bredd',          symbol: 'b',          value: '350', unit: 'mm'    },
-    //  { name: 'Höjd',           symbol: 'h',          value: '650', unit: 'mm'    },
-    //  { name: 'Betongkvalitet', symbol: 'f_{ck}',    value: '30',  unit: 'MPa'   },
-    //  { name: 'Armering',       symbol: 'f_{yd}',    value: '435', unit: 'MPa'   },
-    //  { name: 'Täckskikt',      symbol: 'c_{nom}',   value: '26',  unit: 'mm'    },
-    //],
   },
 
   steps: [
@@ -106,7 +132,7 @@ export const exercise23 = {
       answer: {
         label: 'M_{Ed,max}',
         unit: 'kNm',
-        getCorrect: (p) => parseFloat(p.M_Ed.toFixed(1)),
+        getCorrect: (p) => parseFloat(p.M_Ed_kNm.toFixed(1)),
         hint: 'M(x) = R_A·x − q_d·x²/2 − P_d·(x−3). Beräkna vid x = 4,5 m.',
       },
       solution: [
@@ -157,18 +183,19 @@ export const exercise23 = {
       answer: {
         label: 'A_{s}',
         unit: 'mm²',
-        getCorrect: (p) => parseFloat(p.A_s_req.toFixed(0)),
+        getCorrect: (p) => parseFloat(p.A_s_req_mm2.toFixed(0)),
         hint: 'μ = M_Ed/(b·d²·f_cd). ω = 1 − √(1−2μ). A_s = ω·b·d·f_cd / f_yd.',
       },
       resultCheck: (p) => {
-        const n_bars  = 9
-        const A_s_sel = n_bars * Math.PI * p.phi ** 2 / 4
-        const ok      = A_s_sel >= p.A_s_req
+        const n_bars    = p.n_bars
+        const phi_mm    = p.phi * 1000
+        const A_s_sel   = n_bars * Math.PI * phi_mm ** 2 / 4   // mm²
+        const ok        = A_s_sel >= p.A_s_req_mm2
         return {
           ok,
           latex:
-            `A_{s,req} = ${p.A_s_req.toFixed(0)} \\ \\text{mm}^2 \\rightarrow ` +
-            `\\text{Välj } (7{+}2)\\phi 16{:} \\ A_s = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2 ` +
+            `A_{s,req} = ${p.A_s_req_mm2.toFixed(0)} \\ \\text{mm}^2 \\rightarrow ` +
+            `\\text{Välj } ${p.n_bars}\\phi ${phi_mm}{:} \\ A_s = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2 ` +
             `${ok ? '\\geq' : '<'} A_{s,req} \\quad ${ok ? '\\Rightarrow \\textbf{OK!}' : '\\Rightarrow \\textbf{Ej OK!}'}`,
         }
       },
@@ -188,39 +215,57 @@ export const exercise23 = {
             `d = h - c_{nom} - \\frac{\\phi}{2} = ${p.h} - ${p.c_nom} - ${p.phi / 2} = ${p.d} \\ \\text{mm}`,
           latexBlock: true,
         },
-        { text: 'Relativ momentkapacitet μ:' },
+        { text: 'Använd momentjämvikt för att beräkna storlek på tryckzonen:' },
         {
-          latex: (p) =>
-            `\\mu = \\frac{M_{Ed}}{b \\cdot d^2 \\cdot f_{cd}} = \\frac{${p.M_Ed.toFixed(1)} \\times 10^6}{${p.b} \\cdot ${p.d}^2 \\cdot ${p.fcd}} = ${p.mu.toFixed(3)}`,
+          latex: (p) => [
+            `M_{Ed} = \\underbrace{f_{cd} \\cdot b \\cdot 0.8x}_{kraft} \\underbrace{(d-0.4x)}_{hävarm} `,
+            `${p.M_Ed.toFixed(0)} = ${p.fcd} \\cdot ${p.b} \\cdot ${0.8} \\cdot x \\cdot (${p.d} - 0.4${p.x_na.toFixed(0)})`,
+            `\\Rightarrow x = ${(p.x_na*1000).toFixed(0)} mm`],
           latexBlock: true,
         },
-        { text: 'Relativ armeringsmängd ω (förenklat tryckzonsblock):' },
+        {text: 'Kontrollera nu spänning i armeringen:'},
         {
-          latex: (p) =>
-            `\\omega = 1 - \\sqrt{1 - 2\\mu} = 1 - \\sqrt{1 - 2 \\cdot ${p.mu.toFixed(3)}} = ${p.omega.toFixed(3)}`,
+          latex: (p) => [`\\sigma_s = \\min \\begin{cases}  E_s\\varepsilon_{cu} \\frac{d-x}{x} \\\\ f_{yd} \\end{cases}`,
+            `\\sigma_s = \\min \\begin{cases}  200 \\cdot 10^9 \\cdot 3.5 \\frac{${(p.d*1000).toFixed(0)}-${(p.x_na*1000).toFixed(0)}}{${(p.x_na*1000).toFixed(0)}} =${((200 * 3.5 * p.d-p.x_na)/p.x_na).toFixed(0)} \\text{ MPa}\\\\ ${p.fyd} \\text{ MPa} \\end{cases}`,
+            `\\Rightarrow\\sigma_s = ${p.sigma_s/1e6} \\text{ MPa}`           
+          ],
+           
           latexBlock: true,
         },
+
         { text: 'Erforderlig armeringsarea:' },
+
         {
-          latex: (p) =>
-            `A_{s,req} = \\frac{\\omega \\cdot b \\cdot d \\cdot f_{cd}}{f_{yd}} = ` +
-            `\\frac{${p.omega.toFixed(3)} \\cdot ${p.b} \\cdot ${p.d} \\cdot ${p.fcd}}{${p.fyd}} \\approx ${p.A_s_req.toFixed(0)} \\ \\text{mm}^2`,
-          latexBlock: true,
+          text: (p) => `Välj ${p.n_bars}Ø${p.phi}:`,
         },
-        {
-          text: (p) => `Välj (7+2)Ø${p.phi} (7 stänger i undre rad + 2 i övre rad):`,
-        },
-        {
-          latex: (p) => {
-            const n_bars  = 9
+
+          {
+            latex: (p) => {
+            const n_bars  = p.n_bars
             const A_s_sel = n_bars * Math.PI * p.phi ** 2 / 4
             return (
-              `A_s = ${n_bars} \\cdot \\frac{\\pi \\cdot ${p.phi}^2}{4} = ${n_bars} \\cdot ${(Math.PI * p.phi ** 2 / 4).toFixed(0)} = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2 ` +
-              `\\geq ${p.A_s_req.toFixed(0)} \\ \\text{mm}^2 \\quad \\Rightarrow \\textbf{OK!}`
+              `A_s = ${n_bars} \\cdot \\frac{\\pi \\cdot ${p.phi*1000}^2}{4} = ${n_bars} \\cdot ${(Math.PI * p.phi*1000 ** 2 / 4).toFixed(0)} = ${(A_s_sel*1000000).toFixed(0)} \\ \\text{mm}^2 ` +
+              `\\geq ${(p.A_s_req*1e6).toFixed(0)} \\ \\text{mm}^2 \\quad \\Rightarrow \\textbf{OK!}`
             )
+            
           },
           latexBlock: true,
         },
+        {text: 'Om man räknar ut spänningsfördelning med vald armering så får man en något större tryckzon och kapacitet, eftersom man avrundade antal armeringsstänger uppåt. Jämför bilden nedan med dina beräkningar och reflektera kring dina beräkningar:'},
+          {
+    figure: (p) => ({
+      type: 'concrete-uls',
+      props: {
+        b:       p.b     * 1000,       // m → mm
+        h:       p.h     * 1000,       // m → mm
+        cover:   p.c_nom * 1000,       // m → mm
+        n_bot:   p.n_bars,
+        dia_bot: p.phi   * 1000,       // m → mm
+        fc:      p.fcd,                // MPa (as-is)
+        fy:      p.fyd,                // MPa (as-is)
+      },
+    }),
+  },
       ],
     },
   ],

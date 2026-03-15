@@ -16,6 +16,7 @@ import PsiFactorsTable   from './PsiFactorsTable.jsx'
 import LiveLoadTable     from './LiveLoadTable.jsx'
 import Exercise2Figure   from '../../exercises/figures/Exercise2Figure.jsx'
 import Exercise14Figure  from '../../exercises/figures/Exercise14Figure.jsx'
+import ConcreteULSSVG    from './ConcreteULSSVG.jsx'
 
 const REGISTRY = {
   'beam':             BeamSVG,
@@ -28,6 +29,7 @@ const REGISTRY = {
   'live-loads':       LiveLoadTable,
   'ex2-roof':         Exercise2Figure,
   'ex14-frame':       Exercise14Figure,
+  'concrete-uls':     ConcreteULSSVG,
 }
 
 export default function FigureRenderer({ figure }) {

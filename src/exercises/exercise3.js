@@ -85,7 +85,7 @@ export const exercise3 = {
       },
       solution: [
         { latex: (p) =>
-            `\\frac{h}{d} = \\frac{${p.h}}{${p.d_short}} = ${p.hd_short.toFixed(2)} < 0{,}25 \\Rightarrow \\text{zon D (figur 1.6)}`,
+            `\\frac{h}{d} = \\frac{${p.h}}{${p.d_short}} = ${p.hd_short.toFixed(2)} < 0.25 \\text{zon D (figur 1.6)}`,
           latexBlock: true },
         { latex: (p) =>
             `\\text{Anblåst area: } h \\cdot b_{byggnad} = ${p.h} \\cdot ${p.d_long} = ${p.h * p.d_long} > 10 \\text{ m}^2 \\Rightarrow c_{pe} = c_{pe,10} = ${p.cpe10_D_short}`,
