@@ -45,7 +45,7 @@ export const exercise14 = {
       'Byggnaden är belägen i Lund och är 5,0 m hög. Samtliga pelaravstånd i långsidor och gavlar är $s = 6{,}0$ m. Taket är plant. Förutsätt terrängtyp II.',
     ],
     figures: [
-      { type: 'ex14-frame', props: { nLong: 5, nShort: 4, s: 6, h: 5 } }
+      { type: 'ex14-isometric', props: {} },
     ],
   },
 
@@ -56,9 +56,9 @@ export const exercise14 = {
       question: 'Rita in de strävor som erfordras för att byggnaden skall bli stabil. Strävorna skall bara ta dragkraft. Klicka på knappen i figuren för att se svaret.',
       solution: [
         { text: 'Stomstabilisering behövs i tre plan:' },
-        { text: '1. Takplanet – krysstag i de två ändfalten (första och sista fältet) tar upp horisontell vindlast och för den vidare till gavelväggarna.' },
-        { text: '2. Gavelväggarna (vänster och höger) – krysstag i ett fält per gavelvägg för den vertikala lastvägen ned till grunden.' },
-        { text: '3. Långsidornas väggar behöver inte stabiliseras om taket och gavelväggarna bär horisontallasterna.' },
+        { text: '1. Takplanet – krysstag i de två ändfacken tar upp horisontell vindlast och för den vidare till ytterväggar.' },
+        { text: '2. I väggarna förs lasten ner via vindsträvor till grunden. Minst ett kryss i varje vägg.' },
+        { figure: () => ({ type: 'ex14-isometric', props: { phase: 'a' } }) },
       ],
     },
     {
@@ -66,8 +66,9 @@ export const exercise14 = {
       title: 'b) Lastväg',
       question: 'Rita in lastvägen för vindlasten mot en pelare på långsidan. Klicka på knappen i figuren för att se svaret.',
       solution: [
-        { text: 'Vindlast mot långsidan → övre halvdelens last förs horisontellt via reglar/balkar till takplanet → krysstag i takplanet (drag) för lasten till gavelbalken → gavelbalken för lasten till gavelsträvorna → gavelsträvorna (drag) för lasten ned till grunden.' },
-        { text: 'Undre halvdelens last (pelarens nedre del) tas direkt upp i pelarfoten.' },
+        { text: 'Vindlast mot långsidan → En del av lasten går upp till taket (blå pil) där den förs horisontellt via ett fackverk i taket till gavelväggarna → gavelbalk för lasten till krysstag → till grund' },
+        { text: 'Vindlast mot kortsida → Lasten förs genom taket till den sida där fackverket finns → fackverket för lasten ut till kantbalkar på långsidor → kantbalk för lasten till kryssstag → till grund.' },
+        { figure: () => ({ type: 'ex14-isometric', props: { phase: 'b' } }) },
       ],
     },
     {

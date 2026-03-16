@@ -1,4 +1,5 @@
 import { CONCRETE, REBAR } from '../data/materials.js'
+import { solveBeam }       from '../utils/beamSolver.js'
 
 const concrete = CONCRETE['C30']    // fck=30, fcd=20
 const rebar    = REBAR['K500B-T']   // fyd=435
@@ -7,16 +8,15 @@ const rebar    = REBAR['K500B-T']   // fyd=435
 
 // ─── Figure specs reused in solutions ────────────────────────────────────────
 
-const momentDiagramFigure = {
+const momentDiagramFigure = (p) => ({
   type: 'moment-diagram',
   props: {
-    L: 9,
-    udl: [{ q: 20 }],
-    pointLoads: [{ P: 75, x: 3 }, { P: 75, x: 6 }],
-    divisions: [3, 3, 3],
-    showShear: true,
+    L:          p.L,
+    udl:        [{ q: p.q_d / 1e3 }],                                      // N/m → kN/m
+    pointLoads: p.pointLoads.map(({ P, x }) => ({ P: P / 1e3, x })),       // N → kN
+    showShear:  true,
   },
-}
+})
 
 export const exercise23 = {
   id: 'ex23',
@@ -24,10 +24,13 @@ export const exercise23 = {
 
   // All intermediate results computed once and merged into p
   derive: (p) => {
-    // ── Loads & moment (N, m → N·m) ────────────────────────────────────
-    const R_A    = (p.q_d * p.L + 2 * p.P_d) / 2
-    const x_beam = p.L / 2
-    const M_Ed   = R_A * x_beam - (p.q_d * x_beam ** 2) / 2 - p.P_d * (x_beam - p.x1)  // N·m
+    // ── Loads & moment via general beam solver (SI: N/m, N → N·m) ──────
+    const { R_A, M_max } = solveBeam({
+      L:          p.L,
+      udl:        [{ q: p.q_d }],
+      pointLoads: p.pointLoads,
+    })
+    const M_Ed = M_max   // N·m (governing design moment)
 
     // ── Section geometry (m) ────────────────────────────────────────────
     const d = p.h - p.c_nom - p.phi / 2   // m
@@ -72,11 +75,12 @@ export const exercise23 = {
   },
 
   params: {
-    L:    9,      // m, spännvidd
-    P_d:  75e3,     // kN, dimensionerande punktlast
-    q_d:  20e3,     // kN/m, dimensionerande jämnlast (inkl. egentyngd)
-    x1:   3,      // m, position för vänster punktlast
-    x2:   6,      // m, position för höger punktlast
+    L:    9,        // m
+    q_d:  20e3,     // N/m, dimensionerande jämnlast
+    pointLoads: [   // { P: N, x: m }
+      { P: 75e3, x: 3 },
+      { P: 75e3, x: 6 },
+    ],
     // Tvärsnitt
     b:    350/1000,    // mm
     h:    650/1000,    // mm
@@ -95,27 +99,33 @@ export const exercise23 = {
       'Täckskikt $c_{nom}$ = 26 mm. ' +
       'Dimensionerande laster: $P_d$ = 75 kN (punktlaster) och $q_d$ = 20 kN/m (jämnlast, inkl. egentyngd).',
 
-    figures: [
+    figures: (p) => [
       {
         type: 'beam',
         props: {
-          L: 9,
+          L: p.L,
           supports: { left: 'pin', right: 'roller' },
           loads: [
-            { type: 'udl',   label: 'q_d = 20 kN/m' },
-            { type: 'point', label: 'P_d', x: 1 / 3 },
-            { type: 'point', label: 'P_d', x: 2 / 3 },
+            { type: 'udl', label: `q_d = ${p.q_d / 1e3} kN/m` },
+            ...p.pointLoads.map(({ P, x }) => ({
+              type: 'point',
+              label: `${P / 1e3} kN`,
+              x: x / p.L,
+            })),
           ],
-          divisions: [3, 3, 3],
+          divisions: (() => {
+            const xs = [0, ...p.pointLoads.map(pl => pl.x), p.L]
+            return xs.slice(1).map((x, i) => x - xs[i])
+          })(),
         },
       },
       {
         type: 'rect-section',
-props: (p) => ({
-  b: p.b * 1000,
-  h: p.h * 1000,
-  fillColor: '#e8e8e8',
-}),
+        props: {
+          b: p.b * 1000,
+          h: p.h * 1000,
+          fillColor: '#e8e8e8',
+        },
       },
     ],
   },
@@ -127,145 +137,132 @@ props: (p) => ({
       id: 'M_Ed',
       title: 'Dimensionerande moment',
       question:
-        'Beräkna det dimensionerande böjmomentet $M_{Ed,max}$ (kNm). ' +
-        'Kontrollera snitt vid x = L/2 (midspann).',
+        'Beräkna det dimensionerande böjmomentet $M_{Ed,max}$ (kNm). ',
       answer: {
         label: 'M_{Ed,max}',
         unit: 'kNm',
         getCorrect: (p) => parseFloat(p.M_Ed_kNm.toFixed(1)),
-        hint: 'M(x) = R_A·x − q_d·x²/2 − P_d·(x−3). Beräkna vid x = 4,5 m.',
       },
       solution: [
-        { text: 'Totallasten på balken:' },
         {
-          latex: (p) =>
-            `F_{tot} = q_d \\cdot L + 2P_d = ${p.q_d} \\cdot ${p.L} + 2 \\cdot ${p.P_d} = ${p.q_d * p.L + 2 * p.P_d} \\ \\text{kN}`,
-          latexBlock: true,
+          text: 'Använd momentjämvikt och sedan kraftjämvikt för att beräkna stödreaktioner. "Följ lasten" för att härleda tvärkraftsdiagrammet, och integrera sedan för att få momentdiagram. Största moment måste vara antingen under en punktlast eller i mitten (där utbredd last ger max).'
         },
-        { text: 'Symmetrisk last → $R_A = R_B = F_{tot} / 2$:' },
-        {
-          latex: (p) =>
-            `R_A = \\frac{${p.q_d * p.L + 2 * p.P_d}}{2} = ${p.R_A} \\ \\text{kN}`,
-          latexBlock: true,
-        },
-        {
-          text: (p) => `Frilägg snittet vid x = ${p.L / 2} m (midspann):`,
-        },
-        {
-          latex: (p) =>
-            `M_{Ed}(${p.L / 2}) = R_A \\cdot ${p.L / 2} - \\frac{q_d \\cdot ${p.L / 2}^2}{2} - P_d \\cdot (${p.L / 2} - ${p.x1})`,
-          latexBlock: true,
-        },
-        {
-          latex: (p) => {
-            const x     = p.L / 2
-            const term1 = p.R_A * x
-            const term2 = p.q_d * x * x / 2
-            const term3 = p.P_d * (x - p.x1)
-            return (
-              `= ${p.R_A} \\cdot ${x} - \\frac{${p.q_d} \\cdot ${x * x}}{2} - ${p.P_d} \\cdot ${x - p.x1}` +
-              ` = ${term1} - ${term2} - ${term3} = ${p.M_Ed} \\ \\text{kNm}`
-            )
-          },
-          latexBlock: true,
-        },
-        { text: 'Moment- och tvärkraftsdiagram:' },
-        { figure: momentDiagramFigure },
+        
+
+        { figure: (p) => momentDiagramFigure(p) },
       ],
     },
 
     // ── Step 2 ───────────────────────────────────────────────────────────────
     {
+      id: 'x_na',
+      title: 'Tryckzonens höjd x',
+      question:
+        'Beräkna tryckzonens höjd $x$ (mm) med hjälp av momentjämvikt. ',
+      answer: {
+        label: 'x',
+        unit: 'mm',
+        getCorrect: (p) => parseFloat(p.x_na_mm.toFixed(0)),
+        hint: 'Utgå från momentjämvikt $M_{Ed}$ = $f_{cd}b\\cdot0.8x(d-0.4x)$',
+      },
+      solution: [
+        { text: 'Beräkna dimensionerande materialegenskaper:' },
+        {
+          latex: (p) =>
+            `f_{cd} = \\frac{f_{ck}}{\\gamma_m} = \\frac{${p.fck}}{1.5} = ${p.fcd} \\ \\text{MPa}`,
+          latexBlock: true,
+        },
+        {
+          latex: (p) =>
+            `f_{yd} = \\frac{f_{yk}}{\\gamma_m} = \\frac{${p.fyk}}{1.0} = ${p.fyd} \\ \\text{MPa}`,
+          latexBlock: true,
+        },
+        { text: 'Effektiv höjd (ett lager armering):' },
+        {
+          latex: (p) =>
+            `d = h - c_{nom} - \\frac{\\phi}{2} = ${(p.h*1000).toFixed(0)} - ${(p.c_nom*1000).toFixed(0)} - ${(p.phi*1000/2).toFixed(0)} = ${p.d_mm} \\ \\text{mm}`,
+          latexBlock: true,
+        },
+        { text: 'Momentjämvikt ger andragradsekvation i x:' },
+        {
+          latex: (p) => [
+            `M_{Ed} = \\underbrace{f_{cd} \\cdot b \\cdot 0.8x}_{F_c} \\cdot \\underbrace{(d-0.4x)}_{z}`,
+            `${p.M_Ed_kNm.toFixed(1)} \\cdot 10^6 = ${p.fcd} \\cdot ${(p.b*1000).toFixed(0)} \\cdot 0.8x \\cdot (${p.d_mm} - 0.4x)`,
+           `\\Rightarrow\\quad x = ${p.x_na_mm.toFixed(0)} \\ \\text{mm}`,
+          ],
+          latexBlock: true,
+        },
+      ],
+    },
+
+    // ── Step 3 ───────────────────────────────────────────────────────────────
+    {
       id: 'A_s',
       title: 'Erforderlig armeringsarea',
-      question:
-        'Beräkna erforderlig armeringsarea $A_s$ (mm²). ',
+      question: 'Beräkna erforderlig armeringsarea $A_s$ (mm²).',
       answer: {
-        label: 'A_{s}',
+        label: 'A_{s,req}',
         unit: 'mm²',
         getCorrect: (p) => parseFloat(p.A_s_req_mm2.toFixed(0)),
-        hint: 'μ = M_Ed/(b·d²·f_cd). ω = 1 − √(1−2μ). A_s = ω·b·d·f_cd / f_yd.',
       },
       resultCheck: (p) => {
-        const n_bars    = p.n_bars
-        const phi_mm    = p.phi * 1000
-        const A_s_sel   = n_bars * Math.PI * phi_mm ** 2 / 4   // mm²
-        const ok        = A_s_sel >= p.A_s_req_mm2
+        const n_bars  = p.n_bars
+        const phi_mm  = p.phi * 1000
+        const A_s_sel = n_bars * Math.PI * phi_mm ** 2 / 4   // mm²
+        const ok      = A_s_sel >= p.A_s_req_mm2
         return {
           ok,
           latex:
             `A_{s,req} = ${p.A_s_req_mm2.toFixed(0)} \\ \\text{mm}^2 \\rightarrow ` +
-            `\\text{Välj } ${p.n_bars}\\phi ${phi_mm}{:} \\ A_s = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2 ` +
+            `\\text{Välj } ${n_bars}\\phi${phi_mm.toFixed(0)}{:} \\ A_s = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2 ` +
             `${ok ? '\\geq' : '<'} A_{s,req} \\quad ${ok ? '\\Rightarrow \\textbf{OK!}' : '\\Rightarrow \\textbf{Ej OK!}'}`,
         }
       },
       solution: [
-        { text: 'Beräkna dimensionerande materialegenskaper'},
-        {latex: (p) => 
-          `f_{cd} = \\frac{f_{ck}}{\\gamma_m} = \\frac{${p.fck}}{1.5} = ${p.fcd} \\ \\text{MPa}`,
-          latexBlock: true,
-        },
-        {latex: (p) => 
-          `f_{yd} = \\frac{f_{yk}}{\\gamma_m} = \\frac{${p.fyk}}{1.0} = ${p.fyd} \\ \\text{MPa}`,
-          latexBlock: true,
-        },
-        { text: 'Effektiv höjd (förenklat, ett lager):' },
-        {
-          latex: (p) =>
-            `d = h - c_{nom} - \\frac{\\phi}{2} = ${p.h} - ${p.c_nom} - ${p.phi / 2} = ${p.d} \\ \\text{mm}`,
-          latexBlock: true,
-        },
-        { text: 'Använd momentjämvikt för att beräkna storlek på tryckzonen:' },
+        { text: 'Kontrollera spänning i armeringen vid ULS:' },
         {
           latex: (p) => [
-            `M_{Ed} = \\underbrace{f_{cd} \\cdot b \\cdot 0.8x}_{kraft} \\underbrace{(d-0.4x)}_{hävarm} `,
-            `${p.M_Ed.toFixed(0)} = ${p.fcd} \\cdot ${p.b} \\cdot ${0.8} \\cdot x \\cdot (${p.d} - 0.4${p.x_na.toFixed(0)})`,
-            `\\Rightarrow x = ${(p.x_na*1000).toFixed(0)} mm`],
-          latexBlock: true,
-        },
-        {text: 'Kontrollera nu spänning i armeringen:'},
-        {
-          latex: (p) => [`\\sigma_s = \\min \\begin{cases}  E_s\\varepsilon_{cu} \\frac{d-x}{x} \\\\ f_{yd} \\end{cases}`,
-            `\\sigma_s = \\min \\begin{cases}  200 \\cdot 10^9 \\cdot 3.5 \\frac{${(p.d*1000).toFixed(0)}-${(p.x_na*1000).toFixed(0)}}{${(p.x_na*1000).toFixed(0)}} =${((200 * 3.5 * p.d-p.x_na)/p.x_na).toFixed(0)} \\text{ MPa}\\\\ ${p.fyd} \\text{ MPa} \\end{cases}`,
-            `\\Rightarrow\\sigma_s = ${p.sigma_s/1e6} \\text{ MPa}`           
+            `\\sigma_s = \\min \\begin{cases} E_s \\cdot \\varepsilon_{cu} \\cdot \\dfrac{d-x}{x} \\\\ f_{yd} \\end{cases}`,
+            `= \\min \\begin{cases} 200\\,000 \\cdot 3.5 \\cdot \\dfrac{${p.d_mm}-${p.x_na_mm.toFixed(0)}}{${p.x_na_mm.toFixed(0)}} = ${(p.sigma_s/1e6).toFixed(0)} \\ \\text{MPa} \\\\ ${p.fyd} \\ \\text{MPa} \\end{cases}`,
+            `\\Rightarrow\\quad \\sigma_s = ${(p.sigma_s/1e6).toFixed(0)} \\ \\text{MPa}`,
           ],
-           
           latexBlock: true,
         },
-
-        { text: 'Erforderlig armeringsarea:' },
-
+        { text: 'Erforderlig armeringsarea från kraftjämvikt:' },
         {
-          text: (p) => `Välj ${p.n_bars}Ø${p.phi}:`,
+          latex: (p) =>
+            `A_{s,req} = \\frac{f_{cd} \\cdot b \\cdot 0.8x}{\\sigma_s} = \\frac{${p.fcd} \\cdot ${(p.b*1000).toFixed(0)} \\cdot 0.8 \\cdot ${p.x_na_mm.toFixed(0)}}{${(p.sigma_s/1e6).toFixed(0)}} = ${p.A_s_req_mm2.toFixed(0)} \\ \\text{mm}^2`,
+          latexBlock: true,
         },
-
-          {
-            latex: (p) => {
-            const n_bars  = p.n_bars
-            const A_s_sel = n_bars * Math.PI * p.phi ** 2 / 4
+        {
+          text: (p) => `Välj ${p.n_bars}Ø${(p.phi*1000).toFixed(0)}:`,
+        },
+        {
+          latex: (p) => {
+            const phi_mm  = p.phi * 1000
+            const A_s_sel = p.n_bars * Math.PI * phi_mm ** 2 / 4
             return (
-              `A_s = ${n_bars} \\cdot \\frac{\\pi \\cdot ${p.phi*1000}^2}{4} = ${n_bars} \\cdot ${(Math.PI * p.phi*1000 ** 2 / 4).toFixed(0)} = ${(A_s_sel*1000000).toFixed(0)} \\ \\text{mm}^2 ` +
-              `\\geq ${(p.A_s_req*1e6).toFixed(0)} \\ \\text{mm}^2 \\quad \\Rightarrow \\textbf{OK!}`
+              `A_s = ${p.n_bars} \\cdot \\frac{\\pi \\cdot ${phi_mm.toFixed(0)}^2}{4} = ${A_s_sel.toFixed(0)} \\ \\text{mm}^2` +
+              ` \\geq ${p.A_s_req_mm2.toFixed(0)} \\ \\text{mm}^2 \\quad \\Rightarrow \\textbf{OK!}`
             )
-            
           },
           latexBlock: true,
         },
-        {text: 'Om man räknar ut spänningsfördelning med vald armering så får man en något större tryckzon och kapacitet, eftersom man avrundade antal armeringsstänger uppåt. Jämför bilden nedan med dina beräkningar och reflektera kring dina beräkningar:'},
-          {
-    figure: (p) => ({
-      type: 'concrete-uls',
-      props: {
-        b:       p.b     * 1000,       // m → mm
-        h:       p.h     * 1000,       // m → mm
-        cover:   p.c_nom * 1000,       // m → mm
-        n_bot:   p.n_bars,
-        dia_bot: p.phi   * 1000,       // m → mm
-        fc:      p.fcd,                // MPa (as-is)
-        fy:      p.fyd,                // MPa (as-is)
-      },
-    }),
-  },
+        { text: 'Spänningsfördelning med vald armering (tryckzonen något större pga upprundat antal stänger):' },
+        {
+          figure: (p) => ({
+            type: 'concrete-uls',
+            props: {
+              b:       p.b     * 1000,
+              h:       p.h     * 1000,
+              cover:   p.c_nom * 1000,
+              n_bot:   p.n_bars,
+              dia_bot: p.phi   * 1000,
+              fc:      p.fcd,
+              fy:      p.fyd,
+            },
+          }),
+        },
       ],
     },
   ],
