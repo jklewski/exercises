@@ -48,17 +48,6 @@ export const exercise26b = {
       },
     ],
 
-    givenData: [
-      { name: 'Spännvidd',       symbol: 'L',          value: '12',   unit: 'm'     },
-      { name: 'S-avstånd',       symbol: 's',           value: '5',    unit: 'm'     },
-      { name: 'Egentyngd tak',   symbol: 'G_{k,tak}',  value: '0,5',  unit: 'kN/m²' },
-      { name: 'Snölast',         symbol: 's_{snow}',   value: '1,2',  unit: 'kN/m²' },
-      { name: 'Bredd',           symbol: 'b',           value: '140',  unit: 'mm'    },
-      { name: 'Höjd',            symbol: 'h',           value: '720',  unit: 'mm'    },
-      { name: 'Densitet',        symbol: '\\rho',       value: '500',  unit: 'kg/m³' },
-      { name: 'Karaktäristisk skjuvhållfasthet', symbol: 'f_{vk}', value: '3,5', unit: 'MPa' },
-      { name: 'Klimatklass',     symbol: '',            value: '1',    unit: ''      },
-    ],
   },
 
   steps: [

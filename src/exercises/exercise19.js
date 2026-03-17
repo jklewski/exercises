@@ -96,15 +96,6 @@ export const exercise19 = {
       },
     ],
 
-    givenData: [
-      { name: 'Livhöjd',          symbol: 'h_w',        value: '620', unit: 'mm'  },
-      { name: 'Livtjocklek',      symbol: 't_w',        value: '6',   unit: 'mm'  },
-      { name: 'Flänsbredd',       symbol: 'b_f',        value: '200', unit: 'mm'  },
-      { name: 'Flänsplåttjocklek',symbol: 't_f',        value: '10',  unit: 'mm'  },
-      { name: 'Svets a-mått',     symbol: 'a',          value: '5',   unit: 'mm'  },
-      { name: 'Sträckgräns S275', symbol: 'f_y',        value: '275', unit: 'MPa' },
-      { name: 'Spännvidd',        symbol: 'L',          value: '15',  unit: 'm'   },
-    ],
   },
 
   steps: [

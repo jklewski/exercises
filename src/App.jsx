@@ -1,18 +1,17 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import ExerciseShell from './components/exercise/ExerciseShell.jsx'
+import ExamConfig from './components/exam/ExamConfig.jsx'
+import ExamShell from './components/exam/ExamShell.jsx'
 import { exercises } from './exercises/index.js'
 
 export default function App() {
-  const [currentId, setCurrentId] = useState(null)
+  const [hash, setHash] = useState(window.location.hash.slice(1))
 
-  // Sync with URL hash on load and on back/forward navigation
   useEffect(() => {
     function syncHash() {
-      const id = window.location.hash.slice(1)
-      setCurrentId(id && exercises[id] ? id : null)
+      setHash(window.location.hash.slice(1))
     }
-    syncHash()
     window.addEventListener('hashchange', syncHash)
     return () => window.removeEventListener('hashchange', syncHash)
   }, [])
@@ -21,7 +20,25 @@ export default function App() {
     window.location.hash = id ?? ''
   }
 
-  const exercise = currentId ? exercises[currentId] : null
+  const route = hash.split('?')[0]
+
+  // Exam routes
+  if (route === 'exam') {
+    const hasParams = hash.includes('?') && hash.split('?')[1].length > 0
+    if (hasParams) {
+      return <ExamShell hash={hash} />
+    }
+    return (
+      <div style={{ maxWidth: 820, margin: '0 auto', padding: '1.5rem' }}>
+        <button className="back-btn" onClick={() => navigate(null)}>
+          ← Alla uppgifter
+        </button>
+        <ExamConfig />
+      </div>
+    )
+  }
+
+  const exercise = exercises[route] ?? null
 
   if (!exercise) {
     return (
@@ -39,6 +56,12 @@ export default function App() {
             </li>
           ))}
         </ul>
+        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e5e7eb' }}>
+          <button className="exercise-list-btn" onClick={() => navigate('exam')}>
+            <span className="exercise-list-id" style={{ background: '#475569' }}>✎</span>
+            <span className="exercise-list-title">Skapa tentamen…</span>
+          </button>
+        </div>
       </div>
     )
   }

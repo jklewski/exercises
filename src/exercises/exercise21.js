@@ -99,15 +99,7 @@ export const exercise21 = {
       },
     ],
 
-    givenData: [
-      { name: 'Spännvidd (A till B)',       symbol: 'L',           value: '10',   unit: 'm'    },
-      { name: 'Utskjutande del (B till C)', symbol: 'a',           value: '2',    unit: 'm'    },
-      { name: 'Dim. jämnt fördelad last',   symbol: 'q_d',         value: '1,7',  unit: 'kN/m' },
-      { name: 'Balkbredd',                  symbol: 'b',           value: '90',   unit: 'mm'   },
-      { name: 'Karak. böjhållfasthet',      symbol: 'f_{mk}',      value: '30',   unit: 'MPa'  },
-      { name: 'Modifieringsfaktor',         symbol: 'k_{mod}',     value: '0,8',  unit: '–'    },
-      { name: 'Materialsäk.faktor',         symbol: '\\gamma_M',   value: '1,25', unit: '–'    },
-    ],
+
   },
 
   steps: [

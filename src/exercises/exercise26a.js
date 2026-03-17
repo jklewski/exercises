@@ -42,13 +42,6 @@ export const exercise26a = {
       }
     ],
 
-    givenData: [
-      { name: 'Spännvidd',      symbol: 'L',          value: '12',             unit: 'm'     },
-      { name: 'S-avstånd',      symbol: 's',           value: '5',              unit: 'm'     },
-      { name: 'Egentyngd tak',  symbol: 'G_{k,tak}',  value: '0,5',            unit: 'kN/m²' },
-      { name: 'Snölast',        symbol: 's_{snow}',   value: '1,2',            unit: 'kN/m²' },
-      { name: 'Egentyngd balk', symbol: 'G_{k,balk}', value: 'se ståltabell',  unit: 'kN/m'  },
-    ],
   },
 
   steps: [
