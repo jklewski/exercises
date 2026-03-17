@@ -79,10 +79,10 @@ export const exercise23 = {
     q_d:  20e3,     // N/m, dimensionerande jämnlast
     pointLoads: [   // { P: N, x: m }
       { P: 75e3, x: 3 },
-      { P: 75e3, x: 6 },
+
     ],
     // Tvärsnitt
-    b:    350/1000,    // mm
+    b:    500/1000,    // mm
     h:    650/1000,    // mm
     phi:  16/1000,     // mm, armeringsdiameter
     c_nom: 26/1000,    // m, nominellt täckskikt

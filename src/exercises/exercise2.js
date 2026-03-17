@@ -28,7 +28,7 @@ export const exercise2 = {
     safety_balk: SAFETY_CLASS[3],                       // säkerhetsklass 1, γ_d = 0.83
     safety_pelare: SAFETY_CLASS[3],                       // säkerhetsklass 1, γ_d = 0.83
     cc_ås: 2.5, //m
-    cc_balk: 6, //m
+    cc_balk: 8, //m
     L_balk: 20, //m
     C_e: 1.0,
     C_t: 1.0,
