@@ -1,5 +1,7 @@
 import { exercise1   } from './exercise1.js'
 import { exercise2   } from './exercise2.js'
+import { exercise16  } from './exercise16.js'
+import { exercise20  } from './exercise20.js'
 //import { exercise3   } from './exercise3.js'
 import { exercise14  } from './exercise14.js'
 import { exercise19  } from './exercise19.js'
@@ -18,6 +20,8 @@ import { exercise29  } from './exercise29.js'
 export const exercises = {
   '1': exercise1,
   '2': exercise2,
+  '16': exercise16,
+  '20': exercise20,
   //'3':  exercise3,
   '14': exercise14,
   '19': exercise19,
