@@ -13,15 +13,17 @@
  *   fy      – steel yield strength (MPa)
  */
 export default function ConcreteULSSVG({
-  b       = 200,
-  h       = 400,
-  cover   = 30,
-  n_bot   = 3,
-  dia_bot = 20,
-  n_top   = 0,
-  dia_top = 10,
-  fc      = 25,
-  fy      = 500,
+  b          = 200,
+  h          = 400,
+  cover      = 30,
+  n_bot      = 3,
+  dia_bot    = 20,
+  n_top      = 0,
+  dia_top    = 10,
+  fc         = 25,
+  fy         = 500,
+  sectionOnly = false,
+  label       = null,
 }) {
   // ── Derived geometry ───────────────────────────────────────────────────
   const d_p  = cover + dia_top / 2
@@ -37,14 +39,15 @@ export default function ConcreteULSSVG({
     return Array.from({ length: n }, (_, i) => xMin + i * (xMax - xMin) / (n - 1))
   }
 
-  // Max bars per layer: each bar needs 2·dia centre-to-centre (= 1·dia clear gap)
-  const nmax    = Math.max(1, Math.floor((b - 2 * (dia_bot + cover)) / (2 * dia_bot)))
-  const n_bot_L1 = Math.min(n_bot, nmax)
-  const n_bot_L2 = Math.max(0, n_bot - nmax)
+  // Max bars per layer (EC2: clear ≥ max(20 mm, dia))
+  const c_clear = Math.max(20, dia_bot)
+  const nmax     = Math.max(1, Math.floor((b - 2 * (dia_bot + cover)) / (2 * dia_bot)))
+  const n_bot_L1 = Math.min(n_bot, nmax)   // fill layer 1 first
+  const n_bot_L2 = Math.max(0, n_bot - n_bot_L1)
 
   // Layer y-depths from top (layer 1 = closest to bottom face)
   const yBotL1 = h - cover - dia_bot / 2
-  const yBotL2 = h - cover - 2.5 * dia_bot   // one bar diameter clear gap between layers
+  const yBotL2 = yBotL1 - dia_bot - c_clear   // EC2 min clear spacing between layers
 
   // Effective depth: weighted average of both layers
   const d = Math.round(n_bot_L2 > 0
@@ -115,7 +118,7 @@ export default function ConcreteULSSVG({
   const p1right = p1left + sec_w
   const p2z    = p1right + 85         // zero-stress axis
   const p3z    = p2z + 150            // zero-strain axis
-  const SVG_W  = Math.ceil(p3z + 88)
+  const SVG_W  = sectionOnly ? Math.ceil(p1right + 30) : Math.ceil(p3z + 88)
   const SVG_H  = Math.ceil(topY + sec_h + 30)
 
   const tY  = (y_mm) => topY  + y_mm * sc     // mm depth  → SVG y
@@ -177,23 +180,31 @@ export default function ConcreteULSSVG({
       style={{ fontFamily: 'sans-serif', overflow: 'visible' }}>
 
       {/* Titles */}
-      <text x={p1left + sec_w / 2} y={14} textAnchor="middle" fontSize={fs} fill={dc}>Tvärsnitt</text>
-      <text x={p2z + 35}           y={14} textAnchor="middle" fontSize={fs} fill={dc}>Spänning</text>
-      <text x={p3z + 10}           y={14} textAnchor="middle" fontSize={fs} fill={dc}>Töjning</text>
+      {label && (
+        <text x={p1left + sec_w / 2} y={14} textAnchor="middle" fontSize={fs + 1}
+          fontWeight="bold" fill={blk}>{label}</text>
+      )}
+      {!label && <text x={p1left + sec_w / 2} y={14} textAnchor="middle" fontSize={fs} fill={dc}>Tvärsnitt</text>}
+      {!sectionOnly && <text x={p2z + 35} y={14} textAnchor="middle" fontSize={fs} fill={dc}>Spänning</text>}
+      {!sectionOnly && <text x={p3z + 10} y={14} textAnchor="middle" fontSize={fs} fill={dc}>Töjning</text>}
 
       {/* ══ PANEL 1: Cross-section ══════════════════════════════════════ */}
 
       <rect x={p1left} y={topY} width={sec_w} height={sec_h}
         fill="#d1dce8" stroke={blk} strokeWidth={1.5} />
 
-      {/* Compression zone tint */}
-      <rect x={p1left + 1} y={topY + 1}
-        width={sec_w - 2} height={Math.max(0, tY(x_na) - topY - 1)}
-        fill="rgba(30,58,95,0.10)" />
+      {/* Compression zone tint — only in full mode */}
+      {!sectionOnly && (
+        <rect x={p1left + 1} y={topY + 1}
+          width={sec_w - 2} height={Math.max(0, tY(x_na) - topY - 1)}
+          fill="rgba(30,58,95,0.10)" />
+      )}
 
-      {/* Neutral axis */}
-      <line x1={p1left - 6} y1={tY(x_na)} x2={p1right + 6} y2={tY(x_na)}
-        stroke={dc} strokeWidth={0.9} strokeDasharray="3,2" />
+      {/* Neutral axis — only in full mode */}
+      {!sectionOnly && (
+        <line x1={p1left - 6} y1={tY(x_na)} x2={p1right + 6} y2={tY(x_na)}
+          stroke={dc} strokeWidth={0.9} strokeDasharray="3,2" />
+      )}
 
       {/* Bottom bars (tension) */}
       {barsBot.map(({ x, y }, i) => (
@@ -217,79 +228,89 @@ export default function ConcreteULSSVG({
       <text x={p1left + sec_w / 2} y={botY + 20}
         textAnchor="middle" fontSize={8} fill={dc}>b={b}</text>
 
-      {/* d brace – right */}
-      <VBrace x={p1right + 18} y1={topY} y2={tY(d)} label={`d=${d}`} side="right" />
+      {/* d brace – right (hidden in section-only / problem description) */}
+      {!sectionOnly && (
+        <VBrace x={p1right + 18} y1={topY} y2={tY(d)} label={`d=${d}`} side="right" />
+      )}
 
       {/* ══ PANEL 2: Stress ═════════════════════════════════════════════ */}
 
-      <PanelAxis x0={p2z} y1={topY} y2={botY} />
+      {!sectionOnly && <PanelAxis x0={p2z} y1={topY} y2={botY} />}
 
-      {/* Compression block */}
-      <polygon points={stressPoly} fill="rgba(30,58,95,0.22)" stroke={compClr} strokeWidth={1.2} />
-
-      {/* x brace */}
-      <VBrace x={p2z - 18} y1={topY} y2={tY(x_na)} label="x" />
-
-      {/* x value */}
-      <text x={p2z + 4} y={tY(x_na) + 11} fontSize={8} fill={compClr}>
-        x={x_na.toFixed(0)} mm
-      </text>
-
-      {/* Compression steel stress tick */}
-      {n_top > 0 && (
+      {!sectionOnly && (
         <>
-          <line x1={p2z} y1={tY(yBarTop)} x2={p2z + sig_sp_uls * sigScPx} y2={tY(yBarTop)}
-            stroke={compClr} strokeWidth={2} />
-          <circle cx={p2z + sig_sp_uls * sigScPx} cy={tY(yBarTop)} r={2.5} fill={compClr} />
-          <text x={p2z + sig_sp_uls * sigScPx + 3} y={tY(yBarTop) - 3}
-            fontSize={7.5} fill={compClr}>{sig_sp_uls.toFixed(0)} MPa</text>
+          {/* Compression block */}
+          <polygon points={stressPoly} fill="rgba(30,58,95,0.22)" stroke={compClr} strokeWidth={1.2} />
+
+          {/* x brace */}
+          <VBrace x={p2z - 18} y1={topY} y2={tY(x_na)} label="x" />
+
+          {/* x value */}
+          <text x={p2z + 4} y={tY(x_na) + 11} fontSize={8} fill={compClr}>
+            x={x_na.toFixed(0)} mm
+          </text>
+
+          {/* Compression steel stress tick */}
+          {n_top > 0 && (
+            <>
+              <line x1={p2z} y1={tY(yBarTop)} x2={p2z + sig_sp_uls * sigScT} y2={tY(yBarTop)}
+                stroke={compClr} strokeWidth={2} />
+              <circle cx={p2z + sig_sp_uls * sigScT} cy={tY(yBarTop)} r={2.5} fill={compClr} />
+              <text x={p2z + sig_sp_uls * sigScT + 3} y={tY(yBarTop) - 3}
+                fontSize={7.5} fill={compClr}>{sig_sp_uls.toFixed(0)} MPa</text>
+            </>
+          )}
+
+          {/* Tension steel stress bar (extends left) */}
+          <line x1={p2z} y1={tY(d)} x2={p2z - sig_s_uls * sigScT} y2={tY(d)}
+            stroke={tensClr} strokeWidth={2} />
+          <circle cx={p2z - sig_s_uls * sigScT} cy={tY(d)} r={2.5} fill={tensClr} />
+          <text x={p2z - sig_s_uls * sigScT - 3} y={tY(d) - 4}
+            textAnchor="end" fontSize={7.5} fill={tensClr}>{sig_s_uls.toFixed(0)} MPa</text>
         </>
       )}
 
-      {/* Tension steel stress bar (extends left) */}
-      <line x1={p2z} y1={tY(d)} x2={p2z - sig_s_uls * sigScT} y2={tY(d)}
-        stroke={tensClr} strokeWidth={2} />
-      <circle cx={p2z - sig_s_uls * sigScT} cy={tY(d)} r={2.5} fill={tensClr} />
-      <text x={p2z - sig_s_uls * sigScT - 3} y={tY(d) - 4}
-        textAnchor="end" fontSize={7.5} fill={tensClr}>{sig_s_uls.toFixed(0)} MPa</text>
-
       {/* ══ PANEL 3: Strain ═════════════════════════════════════════════ */}
 
-      <PanelAxis x0={p3z} y1={topY} y2={botY} />
+      {!sectionOnly && <PanelAxis x0={p3z} y1={topY} y2={botY} />}
 
-      {/* Strain polygon (compression = left of p3z, tension = right) */}
-      <polygon
-        points={[
-          `${p3z},${topY}`,
-          `${tX3(eps_top)},${topY}`,
-          `${tX3(eps_bot)},${botY}`,
-          `${p3z},${botY}`,
-        ].join(' ')}
-        fill="rgba(30,58,95,0.10)" stroke="none"
-      />
-      <line
-        x1={tX3(eps_top)} y1={topY}
-        x2={tX3(eps_bot)} y2={botY}
-        stroke={compClr} strokeWidth={1.5}
-      />
+      {!sectionOnly && (
+        <>
+          {/* Strain polygon (compression = left of p3z, tension = right) */}
+          <polygon
+            points={[
+              `${p3z},${topY}`,
+              `${tX3(eps_top)},${topY}`,
+              `${tX3(eps_bot)},${botY}`,
+              `${p3z},${botY}`,
+            ].join(' ')}
+            fill="rgba(30,58,95,0.10)" stroke="none"
+          />
+          <line
+            x1={tX3(eps_top)} y1={topY}
+            x2={tX3(eps_bot)} y2={botY}
+            stroke={compClr} strokeWidth={1.5}
+          />
 
-      {/* Neutral axis marker */}
-      <circle cx={p3z} cy={tY(x_na)} r={2.5} fill={dc} />
+          {/* Neutral axis marker */}
+          <circle cx={p3z} cy={tY(x_na)} r={2.5} fill={dc} />
 
-      {/* ε_cu label at top */}
-      <text x={tX3(eps_top)} y={topY - 4}
-        textAnchor="middle" fontSize={7.5} fill={compClr}>ε_cu</text>
-      <text x={tX3(eps_top)} y={topY - 4 + 9}
-        textAnchor="middle" fontSize={7} fill={dc}>{(eps_cu * 1000).toFixed(1)}‰</text>
+          {/* ε_cu label at top */}
+          <text x={tX3(eps_top)} y={topY - 4}
+            textAnchor="middle" fontSize={7.5} fill={compClr}>ε_cu</text>
+          <text x={tX3(eps_top)} y={topY - 4 + 9}
+            textAnchor="middle" fontSize={7} fill={dc}>{(eps_cu * 1000).toFixed(1)}‰</text>
 
-      {/* ε_s marker at tension steel level */}
-      <line x1={p3z} y1={tY(d)} x2={tX3(eps_s_uls)} y2={tY(d)}
-        stroke={tensClr} strokeWidth={1} strokeDasharray="2,2" />
-      <circle cx={tX3(eps_s_uls)} cy={tY(d)} r={2} fill={tensClr} />
-      <text x={tX3(eps_s_uls) + 3} y={tY(d) + 3}
-        fontSize={7.5} fill={tensClr}>ε_s</text>
-      <text x={tX3(eps_s_uls) + 3} y={tY(d) + 12}
-        fontSize={7} fill={tensClr}>{(eps_s_uls * 1000).toFixed(2)}‰</text>
+          {/* ε_s marker at tension steel level */}
+          <line x1={p3z} y1={tY(d)} x2={tX3(eps_s_uls)} y2={tY(d)}
+            stroke={tensClr} strokeWidth={1} strokeDasharray="2,2" />
+          <circle cx={tX3(eps_s_uls)} cy={tY(d)} r={2} fill={tensClr} />
+          <text x={tX3(eps_s_uls) + 3} y={tY(d) + 3}
+            fontSize={7.5} fill={tensClr}>ε_s</text>
+          <text x={tX3(eps_s_uls) + 3} y={tY(d) + 12}
+            fontSize={7} fill={tensClr}>{(eps_s_uls * 1000).toFixed(2)}‰</text>
+        </>
+      )}
 
     </svg>
   )

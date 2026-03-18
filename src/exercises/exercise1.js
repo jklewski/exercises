@@ -12,7 +12,7 @@ const COEFFS = LOAD_FACTORS.STR_B
 
 export const exercise1 = {
   id: 'ex1',
-  title: 'Uppgift 1 – Laster',
+  title: 'Uppgift 1 – Lastkombinationer',
 
   derive: (p) => {
     // fix: bare variable names → p.*; param names aligned with params below

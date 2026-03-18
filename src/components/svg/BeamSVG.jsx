@@ -24,6 +24,10 @@
  *              the beam, the free tip is at the right end, and the dimension line
  *              shows two segments: L (span) and overhang (a).
  *
+ *   rebarBot  – draw a reinforcement line along the bottom of the beam
+ *   rebarTop  – draw a reinforcement line along the top of the beam
+ *   intermediateSupports – array of 0–1 fractions: draw pin supports at those positions
+ *
  * Layout:
  *   UDL rows stack vertically above the beam (top → bottom order).
  *   Point loads are drawn as a single arrow spanning the full load-area height.
@@ -36,11 +40,17 @@ export default function BeamSVG({
   loads = [],
   divisions = null,
   overhang = 0,
+  rebarBot = false,      // true | [{xStart, xEnd}, ...]  (0–1 fractions of span)
+  rebarTop = false,      // true | [{xStart, xEnd}, ...]
+  intermediateSupports = [],
+  scale = 1,             // display scale factor (keeps viewBox, shrinks rendered size)
+  showDimension = true,  // show the bottom dimension line
 }) {
   const W = 520
   const x0 = 70       // left beam end x
   const x1 = 450      // right beam end x
   const beamLen = x1 - x0
+  const beamH = 22    // visual height of beam rectangle
 
   const Ltot = L + overhang
   // x-position of the right support (may differ from x1 when overhang > 0)
@@ -62,12 +72,14 @@ export default function BeamSVG({
   // UDL rows start below the point-load label reserve area
   const udlTop = topPad + ptLabelH
 
-  const beamY  = udlTop + numUdlRows * (rowH + rowGap) + (numUdlRows > 0 ? 4 : 0)
+  // beamY = bottom of beam rect (support attachment point)
+  const beamBot = udlTop + numUdlRows * (rowH + rowGap) + (numUdlRows > 0 ? 4 : 0)
+  const beamTop = beamBot - beamH
   const loadAreaTop = topPad  // y where point-load arrows start (full height)
 
-  // Total SVG height depends on support type
+  // Total SVG height depends on support type and whether dimension line is shown
   const supportH = (supports.left === 'fixed' || supports.right === 'fixed') ? 35 : 45
-  const H = beamY + supportH + 50  // room for dimension line
+  const H = beamBot + supportH + (showDimension ? 50 : 10)
 
   const numArrows  = 10
   const arrowHeadSize = 6
@@ -116,9 +128,9 @@ export default function BeamSVG({
 
     return (
       <g key={`pt-${idx}`}>
-        <line x1={ax} y1={topY} x2={ax} y2={beamY} stroke={color} strokeWidth="2.5" />
+        <line x1={ax} y1={topY} x2={ax} y2={beamTop} stroke={color} strokeWidth="2.5" />
         <polygon
-          points={`${ax},${beamY} ${ax - hs / 2},${beamY - hs} ${ax + hs / 2},${beamY - hs}`}
+          points={`${ax},${beamTop} ${ax - hs / 2},${beamTop - hs} ${ax + hs / 2},${beamTop - hs}`}
           fill={color}
         />
         {load.label && (
@@ -131,6 +143,7 @@ export default function BeamSVG({
   }
 
   // ── Support shapes ─────────────────────────────────────────────────────
+  // All support y-coordinates reference beamBot (bottom of beam)
   function renderSupport(type, x, side) {
     const triH = 22
     const triW = 13
@@ -140,11 +153,11 @@ export default function BeamSVG({
       return (
         <g>
           <polygon
-            points={`${x},${beamY} ${x - triW},${beamY + triH} ${x + triW},${beamY + triH}`}
+            points={`${x},${beamBot} ${x - triW},${beamBot + triH} ${x + triW},${beamBot + triH}`}
             fill="none" stroke="#374151" strokeWidth="1.8"
           />
-          <circle cx={x} cy={beamY} r="3.5" fill="#374151" />
-          <line x1={x - groundW} y1={beamY + triH + 1} x2={x + groundW} y2={beamY + triH + 1}
+          <circle cx={x} cy={beamBot} r="3.5" fill="#374151" />
+          <line x1={x - groundW} y1={beamBot + triH + 1} x2={x + groundW} y2={beamBot + triH + 1}
             stroke="#374151" strokeWidth="1.8" />
         </g>
       )
@@ -153,24 +166,24 @@ export default function BeamSVG({
       return (
         <g>
           <polygon
-            points={`${x},${beamY} ${x - triW},${beamY + triH} ${x + triW},${beamY + triH}`}
+            points={`${x},${beamBot} ${x - triW},${beamBot + triH} ${x + triW},${beamBot + triH}`}
             fill="none" stroke="#374151" strokeWidth="1.8"
           />
-          <circle cx={x} cy={beamY} r="3.5" fill="#374151" />
-          <circle cx={x - 7} cy={beamY + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
-          <circle cx={x}     cy={beamY + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
-          <circle cx={x + 7} cy={beamY + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
-          <line x1={x - groundW} y1={beamY + triH + 8} x2={x + groundW} y2={beamY + triH + 8}
+          <circle cx={x} cy={beamBot} r="3.5" fill="#374151" />
+          <circle cx={x - 7} cy={beamBot + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
+          <circle cx={x}     cy={beamBot + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
+          <circle cx={x + 7} cy={beamBot + triH + 4} r="3.5" fill="none" stroke="#374151" strokeWidth="1.5" />
+          <line x1={x - groundW} y1={beamBot + triH + 8} x2={x + groundW} y2={beamBot + triH + 8}
             stroke="#374151" strokeWidth="1.8" />
         </g>
       )
     }
     if (type === 'fixed') {
-      // Wall: hatched rectangle on outer side
+      // Wall: hatched rectangle on outer side, spanning full beam height + margin
       const wallW = 12
-      const wallH = 44
+      const wallH = beamH + 20
       const wallX = side === 'left' ? x - wallW : x
-      const wallTop = beamY - wallH / 2
+      const wallTop = beamTop - 10
 
       const hatches = []
       for (let i = 0; i < 5; i++) {
@@ -193,23 +206,46 @@ export default function BeamSVG({
   }
 
   // ── Dimension line ─────────────────────────────────────────────────────
-  const dimY = beamY + (supports.left === 'fixed' ? 30 : 40)
+  const dimY = beamBot + (supports.left === 'fixed' ? 30 : 40)
+
+  // Normalise rebarBot/rebarTop: boolean true → full span, array → use as-is
+  const rebarBotSegs = !rebarBot ? [] : rebarBot === true ? [{ xStart: 0, xEnd: 1 }] : rebarBot
+  const rebarTopSegs = !rebarTop ? [] : rebarTop === true ? [{ xStart: 0, xEnd: 1 }] : rebarTop
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ fontFamily: 'sans-serif' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} width={W * scale} height={H * scale} style={{ fontFamily: 'sans-serif' }}>
 
       {udlLoads.map((row, i) => renderUDL(row, i))}
       {pointLoads.map((load, i) => renderPointLoad(load, i))}
 
-      {/* Beam */}
-      <line x1={x0} y1={beamY} x2={x1} y2={beamY}
-        stroke="#1a1a2e" strokeWidth="5" strokeLinecap="round" />
+      {/* Beam rectangle */}
+      <rect x={x0} y={beamTop} width={beamLen} height={beamH}
+        fill="#e8e8e8" stroke="#1a1a2e" strokeWidth="1.5" />
+
+      {/* Rebar lines */}
+      {rebarBotSegs.map((seg, i) => (
+        <line key={`rb${i}`}
+          x1={x0 + seg.xStart * beamLen + 4} y1={beamBot - 5}
+          x2={x0 + seg.xEnd   * beamLen - 4} y2={beamBot - 5}
+          stroke="#1a1a2e" strokeWidth="3" strokeLinecap="round" />
+      ))}
+      {rebarTopSegs.map((seg, i) => (
+        <line key={`rt${i}`}
+          x1={x0 + seg.xStart * beamLen + 4} y1={beamTop + 5}
+          x2={x0 + seg.xEnd   * beamLen - 4} y2={beamTop + 5}
+          stroke="#1a1a2e" strokeWidth="3" strokeLinecap="round" />
+      ))}
 
       {renderSupport(supports.left  ?? 'pin',    x0,         'left')}
       {renderSupport(supports.right ?? 'roller',  xSupRight,  'right')}
 
+      {/* Intermediate supports */}
+      {intermediateSupports.map((frac, i) => (
+        <g key={`isup${i}`}>{renderSupport('pin', x0 + frac * beamLen, 'mid')}</g>
+      ))}
+
       {/* Dimension line */}
-      {overhang > 0 ? (
+      {showDimension && (overhang > 0 ? (
         // Two segments: span L (A→B) and overhang a (B→C)
         <>
           {/* Span L */}
@@ -255,7 +291,7 @@ export default function BeamSVG({
             {L} m
           </text>
         </>
-      )}
+      ))}
     </svg>
   )
 }

@@ -3,35 +3,51 @@ export const exercise3 = {
   title: 'Uppgift 3 – Vindlast',
 
   derive: (p) => {
+    const d_short = p.s_pelare * (p.n_pelare - 1)   // building length [m]
+
     // a) Wind against long side
-    const hd_long   = p.h / p.d_long
+    const hd_long      = p.h / p.d_long
     const cpe10_D_long = 0.7 + (hd_long - 0.25) * (0.8 - 0.7) / (1 - 0.25)
-    const w_long    = p.qk_z * (cpe10_D_long + p.cpi)
-    const qk_long   = w_long * p.s_pelare           // kN/m (line load per column)
+    const w_long       = p.qk_z * (cpe10_D_long + p.cpi)
+    const qk_long      = w_long * p.s_pelare          // kN/m (line load per column)
 
     // b) Wind against short side
-    const hd_short  = p.h / p.d_short
-    const cpe10_D_short = 0.7                        // h/d < 0.25 → table value
-    const w_short   = p.qk_z * (cpe10_D_short + p.cpi)
+    const hd_short      = p.h / d_short
+    const cpe10_D_short = 0.7                         // h/d < 0.25 → table value
+    const w_short       = p.qk_z * (cpe10_D_short + p.cpi)
 
     // c) Roof suction (zone F, flat roof)
-    const qk_roof   = p.qk_z * p.cpe1_F
+    const qk_roof = p.qk_z * p.cpe1_F
 
-    return { hd_long, cpe10_D_long, w_long, qk_long, hd_short, cpe10_D_short, w_short, qk_roof }
+    return { d_short, hd_long, cpe10_D_long, w_long, qk_long, hd_short, cpe10_D_short, w_short, qk_roof }
   },
 
   params: {
     qk_z:     0.45,   // karakteristisk hastighetstryck [kN/m²]
     h:        7,      // byggnadshöjd [m]
     d_long:   20,     // djup vid anblåsning mot långsida [m]
-    d_short:  50,     // byggnadens längd / djup mot kortsida [m]
-    s_pelare: 6,      // pelarcentrumavstånd [m]
+    n_pelare: 11,     // antal pelare längs byggnaden
+    s_pelare: 5,      // pelarcentrumavstånd [m]
     cpi:      0.3,    // inre vindlast (sug, |cpi| = 0.3, mest ogynnsamt med yttre tryck)
     cpe1_F:   2.5,    // lokal formfaktor, zon F platt tak (absolutvärde)
   },
 
   problem: {
-    description: 'Byggnaden i uppgift 2 är 50 m lång. Vindlaster mot väggarna förs över till pelarna via ' +
+    figures: (p) => [
+      {
+        type: 'ex2-roof',
+        props: {
+          span:      p.d_long,
+          sPurlin:   2.5,
+          sBeam:     p.s_pelare,
+          nBeams:    p.n_pelare,
+          colHeight: p.h,
+          beamDepth: 1,
+        },
+      },
+    ],
+    description: (p) =>
+      `Byggnaden nedan är ${p.d_short} m lång. Vindlaster mot väggarna förs över till pelarna via ` +
       'horisontella sekundärbalkar. Anta terrängtyp III. Vid beräkning av invändig vindlast behöver den ' +
       'relativa öppningsarean inte uppskattas – välj antingen undertryck ($c_{pi} = -0{,}3$) eller ' +
       'övertryck ($c_{pi} = +0{,}2$). Bestäm karakteristiska värden för:',
@@ -49,7 +65,7 @@ export const exercise3 = {
       },
       solution: [
 { text: 'Terrängtyp III' },
-{ text: 'Väljer byggnadens höjd (7 m) som referenshöjd och antar på säkra sidan att denna vindlast verkar över hela byggnadens höjd.' },
+{ text: (p) => `Väljer byggnadens höjd (${p.h} m) som referenshöjd och antar på säkra sidan att denna vindlast verkar över hela byggnadens höjd.` },
 { text: 'Falun $\\rightarrow$ $v_b = 23$ m/s (figur 1.5)' },
 { text: 'Ur tabell 1.12 interpoleras värdena för terrängtyp III, höjd 4 resp. 8 m. För att få ett värde på $q_k$ för $z = 7$ m.' },
         { latex: (p) =>
@@ -57,7 +73,7 @@ export const exercise3 = {
           latexBlock: true },
         { text: 'Störst horisontallast fås på lovartssidan: zon D (figur 1.6).' },
         
-        { text: (p) => `Anblåst area per ${5} pelare: $h \\cdot s_{pelare} =$` },
+        { text: (p) => `Anblåst area per pelare: $h \\cdot s_{pelare} =$` },
         
 { latex: (p) =>
     `= ${p.h} \\cdot ${p.s_pelare} = ${p.h * p.s_pelare} \\ \\text{m}^2 > 10 \\ \\text{m}^2`,

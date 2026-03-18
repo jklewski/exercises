@@ -5,7 +5,7 @@ import { SAFETY_CLASS, LOAD_FACTORS } from '../data/materials.js'
 
 export const exercise2 = {
   id: 'ex2',
-  title: 'Uppgift 2 – Laster',
+  title: 'Uppgift 2 – Lastnedräkning',
 
   derive: (p) => {
     // fix: bare variable names → p.*; param names aligned with params below

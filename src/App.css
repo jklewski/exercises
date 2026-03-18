@@ -1,58 +1,233 @@
-/* ── Index page ─────────────────────────────────────────── */
-.index-page {
-  max-width: 820px;
+/* ── Landing page ───────────────────────────────────────── */
+.landing-wrap {
+  min-height: 100vh;
+  background: #f1f5f9;
+}
+
+.landing-inner {
+  max-width: 960px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 0 1.5rem;
 }
 
-.index-header h1 {
-  font-size: 1.4rem;
-  color: #1e3a5f;
-  margin: 0 0 1.5rem 0;
+.landing-hero {
+  background: #1e3a5f;
+  padding: 2.5rem 0;
+  margin-bottom: 2rem;
 }
 
-.exercise-list {
-  list-style: none;
-  padding: 0;
+.landing-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.3rem;
+  letter-spacing: -0.01em;
+}
+
+.landing-sub {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.6);
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
-.exercise-list-btn {
-  width: 100%;
+.landing-body {
+  padding-bottom: 3rem;
+}
+
+/* ── Info box ── */
+.landing-infobox {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.landing-infobox-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  line-height: 1.5;
+}
+
+.landing-infobox p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* ── Chapter sections ── */
+.chapter-section {
+  margin-bottom: 2rem;
+}
+
+.chapter-heading {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
 }
 
-.exercise-list-btn:hover {
-  background: #f0f4f8;
-  border-color: #1e3a5f;
-}
-
-.exercise-list-id {
-  font-size: 0.8rem;
+.chapter-badge {
+  font-size: 0.78rem;
   font-weight: 700;
   color: #fff;
   background: #1e3a5f;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.65rem;
   border-radius: 4px;
-  min-width: 32px;
-  text-align: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.exercise-list-title {
-  font-size: 0.95rem;
+.chapter-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.chapter-rule {
+  flex: 1;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+/* ── Exercise cards grid ── */
+.ex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 0.625rem;
+}
+
+.ex-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  min-height: 76px;
+}
+
+.ex-card:hover:not(:disabled) {
+  border-color: #1e3a5f;
+  box-shadow: 0 2px 8px rgba(30,58,95,0.1);
+  background: #f8fafc;
+}
+
+.ex-card--dim {
+  background: #f8fafc;
+  cursor: default;
+}
+
+.ex-card-id {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #1e3a5f;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  align-self: flex-start;
+  letter-spacing: 0.02em;
+}
+
+.ex-card--dim .ex-card-id {
+  background: #cbd5e1;
+}
+
+.ex-card-title {
+  font-size: 0.84rem;
   color: #1e293b;
+  line-height: 1.35;
+}
+
+.ex-card-title--empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* ── Exam footer button ── */
+.landing-footer {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #cbd5e1;
+}
+
+.exam-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #1e293b;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.exam-btn:hover {
+  background: #f8fafc;
+  border-color: #1e3a5f;
+}
+
+.exam-btn-icon {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: #475569;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+}
+
+/* ── Hero links ── */
+.landing-hero-inner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.landing-hero-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.15rem;
+}
+
+.site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.825rem;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.site-footer-link:hover {
+  color: #fff;
+}
+
+.site-footer-github {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.site-footer-sep {
+  color: rgba(255,255,255,0.3);
+  font-size: 0.825rem;
 }
 
 .back-btn {

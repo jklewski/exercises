@@ -3,6 +3,7 @@ import AnswerField from './AnswerField.jsx'
 import SolutionPanel from './SolutionPanel.jsx'
 import Equation from '../../math/Equation.jsx'
 import InlineText from '../../math/InlineText.jsx'
+import FigureRenderer from '../svg/FigureRenderer.jsx'
 
 export default function StepModule({ step, params, answers, onAnswer, index }) {
   const [submitted, setSubmitted] = useState(false)
@@ -18,7 +19,19 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
         <h2 className="step-title"><InlineText text={step.title} /></h2>
       </div>
 
-      <p className="step-question"><InlineText text={step.question} /></p>
+      <p className="step-question">
+        <InlineText text={typeof step.question === 'function' ? step.question(params) : step.question} />
+      </p>
+
+      {step.figures && (
+        <div className="problem-figures">
+          {step.figures(params).map((fig, i) => (
+            <div key={i} className="svg-container">
+              <FigureRenderer figure={fig} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {step.answer && (
         <div className="step-answer-row">
@@ -26,7 +39,7 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
             label={step.answer.label}
             unit={step.answer.unit}
             correctAnswer={step.answer.getCorrect(params, answers)}
-            hint={step.answer.hint}
+            hint={typeof step.answer.hint === 'function' ? step.answer.hint(params) : step.answer.hint}
             onCorrect={(value) => {
               setSubmitted(true)
               onAnswer(step.id, value)

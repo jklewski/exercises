@@ -1,15 +1,14 @@
 /**
  * Exercise20PlanSVG – plan view of a two-bay timber floor system.
  *
- * Three horizontal walls (north, hjärtvägg, south) with beams spanning each bay.
- * Beams in bay 2 are offset by half the c/c spacing to clearly show
- * that the beams are NOT continuous through the centre wall.
+ * Three horizontal walls (north, hjärtvägg, south) with beams running
+ * continuously from the north wall to the south wall over the centre support.
  *
  * Props:
  *   span    – beam span per bay, metres (default 3.5)
  *   ccBeam  – beam c/c spacing, metres (default 0.6)
  */
-export default function Exercise20PlanSVG({ span = 3.5, ccBeam = 0.6 }) {
+export default function Exercise20PlanSVG({ span = 3.5, ccBeam = 0.6, continuous = false }) {
   const scX  = 62     // px per metre, horizontal (c/c direction)
   const scY  = 42     // px per metre, vertical (span direction)
   const wallT = 11    // wall thickness in px
@@ -36,15 +35,16 @@ export default function Exercise20PlanSVG({ span = 3.5, ccBeam = 0.6 }) {
   const beamXs = Array.from({ length: nSpaces + 1 }, (_, i) => ML + i * cc_px)
   const beamW  = Math.max(4.5, 0.045 * scX)  // 45 mm → exaggerated for visibility
 
-  // Beams overlap into walls to show simple bearing (not fixed)
-  const overlap = 4   // px each end extends into the wall
+  const overlap = 4   // px each end extends into walls
 
-  // Bay 1: top end into north wall, bottom end into hjärtvägg (with gap from bay 2)
+  // Continuous: one rect per beam spanning full height north→south wall
+  const beam_top = b1y0 - overlap
+  const beam_bot = b2y1 + overlap
+
+  // Non-continuous: two separate rects with a visible gap at the centre wall
   const b1_top = b1y0 - overlap
-  const b1_bot = b1y1 + overlap           // stays inside centre wall
-
-  // Bay 2: top end into hjärtvägg (gap from bay 1), bottom end into south wall
-  const b2_top = b2y0 - overlap           // stays inside centre wall
+  const b1_bot = b1y1 + overlap   // into centre wall
+  const b2_top = b2y0 - overlap   // into centre wall
   const b2_bot = b2y1 + overlap
 
   function dimTick(x, y, vert = false) {
@@ -86,21 +86,21 @@ export default function Exercise20PlanSVG({ span = 3.5, ccBeam = 0.6 }) {
           fill="#d1d5db" stroke="#374151" strokeWidth={1} />
       ))}
 
-      {/* Beams – bay 1 (overlap into north wall and hjärtvägg) */}
-      {beamXs.map((bx, i) => (
-        <rect key={`b1-${i}`}
-          x={bx - beamW / 2} y={b1_top}
-          width={beamW} height={b1_bot - b1_top}
-          fill="#374151" />
-      ))}
-
-      {/* Beams – bay 2 (aligned, overlap into hjärtvägg and south wall; gap from bay 1) */}
-      {beamXs.map((bx, i) => (
-        <rect key={`b2-${i}`}
-          x={bx - beamW / 2} y={b2_top}
-          width={beamW} height={b2_bot - b2_top}
-          fill="#374151" />
-      ))}
+      {/* Beams */}
+      {continuous
+        ? beamXs.map((bx, i) => (
+            <rect key={`beam-${i}`}
+              x={bx - beamW / 2} y={beam_top}
+              width={beamW} height={beam_bot - beam_top}
+              fill="#374151" />
+          ))
+        : beamXs.map((bx, i) => (
+            <g key={`beam-${i}`}>
+              <rect x={bx - beamW / 2} y={b1_top} width={beamW} height={b1_bot - b1_top} fill="#374151" />
+              <rect x={bx - beamW / 2} y={b2_top} width={beamW} height={b2_bot - b2_top} fill="#374151" />
+            </g>
+          ))
+      }
 
       {/* Plan outline */}
       <rect x={ML} y={wy0} width={planW} height={2 * bayH + 3 * wallT}
@@ -153,10 +153,10 @@ export default function Exercise20PlanSVG({ span = 3.5, ccBeam = 0.6 }) {
 
       {/* ── Labels ── */}
 
-      {/* "Balk" → one of the bay-1 beams */}
+      {/* "Balk" → one of the beams, pointed at in bay 1 */}
       {(() => {
         const bx = beamXs[2], by = b1y0 + (b1y1 - b1y0) * 0.4
-        const lx = ML - 12, ly = b1y0 + (b1y1 - b1y0) * 0.3
+        const lx = ML - 12,   ly = b1y0 + (b1y1 - b1y0) * 0.3
         return (
           <g>
             <line x1={lx} y1={ly} x2={bx} y2={by} stroke="#374151" strokeWidth={0.6} />

@@ -3,6 +3,7 @@ import './App.css'
 import ExerciseShell from './components/exercise/ExerciseShell.jsx'
 import ExamConfig from './components/exam/ExamConfig.jsx'
 import ExamShell from './components/exam/ExamShell.jsx'
+import LandingPage from './components/LandingPage.jsx'
 import { exercises } from './exercises/index.js'
 
 export default function App() {
@@ -41,29 +42,7 @@ export default function App() {
   const exercise = exercises[route] ?? null
 
   if (!exercise) {
-    return (
-      <div className="index-page">
-        <div className="index-header">
-          <h1>Byggkonstruktion – Övningsuppgifter</h1>
-        </div>
-        <ul className="exercise-list">
-          {Object.entries(exercises).map(([id, ex]) => (
-            <li key={id}>
-              <button className="exercise-list-btn" onClick={() => navigate(id)}>
-                <span className="exercise-list-id">{id}</span>
-                <span className="exercise-list-title">{ex.title}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #e5e7eb' }}>
-          <button className="exercise-list-btn" onClick={() => navigate('exam')}>
-            <span className="exercise-list-id" style={{ background: '#475569' }}>✎</span>
-            <span className="exercise-list-title">Skapa tentamen…</span>
-          </button>
-        </div>
-      </div>
-    )
+    return <LandingPage onNavigate={navigate} />
   }
 
   return (
