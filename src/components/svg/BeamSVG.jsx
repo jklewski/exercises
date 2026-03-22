@@ -72,9 +72,12 @@ export default function BeamSVG({
   // UDL rows start below the point-load label reserve area
   const udlTop = topPad + ptLabelH
 
-  // beamY = bottom of beam rect (support attachment point)
-  const beamBot = udlTop + numUdlRows * (rowH + rowGap) + (numUdlRows > 0 ? 4 : 0)
-  const beamTop = beamBot - beamH
+  // beamTop sits just below the last UDL row's arrow tips (+ 4 px gap)
+  const lastRowBot = numUdlRows > 0
+    ? udlTop + (numUdlRows - 1) * (rowH + rowGap) + rowH
+    : udlTop
+  const beamTop = lastRowBot + (numUdlRows > 0 ? 4 : 0)
+  const beamBot = beamTop + beamH
   const loadAreaTop = topPad  // y where point-load arrows start (full height)
 
   // Total SVG height depends on support type and whether dimension line is shown

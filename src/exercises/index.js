@@ -14,6 +14,12 @@ import { exercise26a } from './exercise26a.js'
 import { exercise26b } from './exercise26b.js'
 import { exercise26c } from './exercise26c.js'
 import { exercise29  } from './exercise29.js'
+import { exercise34  } from './exercise34.js'
+import { exercise35  } from './exercise35.js'
+import { exercise38  } from './exercise38.js'
+import { exercise39  } from './exercise39.js'
+import { exercise40  } from './exercise40.js'
+import { exercise41  } from './exercise41.js'
 
 /**
  * Exercise registry.
@@ -37,4 +43,10 @@ export const exercises = {
   '26b': exercise26b,
   '26c': exercise26c,
   '29': exercise29,
+  '34': exercise34,
+  '35': exercise35,
+  '38': exercise38,
+  '39': exercise39,
+  '40': exercise40,
+  '41': exercise41,
 }

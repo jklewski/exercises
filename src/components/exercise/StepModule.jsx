@@ -25,7 +25,7 @@ export default function StepModule({ step, params, answers, onAnswer, index }) {
 
       {step.figures && (
         <div className="problem-figures">
-          {step.figures(params).map((fig, i) => (
+          {(typeof step.figures === 'function' ? step.figures(params) : step.figures).map((fig, i) => (
             <div key={i} className="svg-container">
               <FigureRenderer figure={fig} />
             </div>

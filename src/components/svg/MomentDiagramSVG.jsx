@@ -8,7 +8,7 @@
  *    internally using direct equilibrium.
  *
  * 2. Precomputed (statically indeterminate beams, from beamSolverDSM):
- *    Provide precomputed = { mXs, mVals, vXs, vVals, deflXs?, deflVals?, Ltot }
+ *    Provide precomputed = { mXs, mVals, vXs, vVals, deflXs?, deflVals?, Ltot, nodes? }
  *    The drawing is identical in both modes.
  *
  * Props (analytic mode):
@@ -20,12 +20,13 @@
  *   divisions  – optional panel lengths for tick labels
  *
  * Props (precomputed mode):
- *   precomputed – { mXs, mVals, vXs, vVals, Ltot, deflXs?, deflVals? }
+ *   precomputed – { mXs, mVals, vXs, vVals, Ltot, nodes?, deflXs?, deflVals? }
  *
- * Shared props:
+ * Display options (all default to their natural state):
+ *   showMoment     – show M(x) diagram (default true)
  *   showShear      – show V(x) diagram (default false)
- *   showDeflection – show v(x) diagram; requires deflXs/deflVals in precomputed
- *                    (also forces showShear = true)
+ *   showDeflection – show v(x) diagram; requires deflXs/deflVals in precomputed (default false)
+ *   showPeakAnnotations – annotate peak values (default true)
  *
  * Sign convention:
  *   Positive M = sagging → plots downward (tension face)
@@ -40,17 +41,17 @@ export default function MomentDiagramSVG({
   udl = [],
   pointLoads = [],
   divisions = null,
-  // shared
+  // display options
+  showMoment = true,
   showShear = false,
   showDeflection = false,
   showPeakAnnotations = true,
   // DSM precomputed data
   precomputed = null,
 }) {
-  // Total beam length
   const Ltot = precomputed?.Ltot ?? (L + overhang)
 
-  // ── Analytic solver (statically determinate, used when no precomputed data) ──
+  // ── Analytic solver (statically determinate) ──────────────────────────────
   let R_A = 0, M_A = 0, R_B = 0
   if (!precomputed) {
     let totalLoad = 0, momentAboutA = 0
@@ -69,9 +70,7 @@ export default function MomentDiagramSVG({
     const leftFixed  = supports?.left  === 'fixed'
     const rightFixed = supports?.right === 'fixed'
     if (leftFixed) {
-      R_A = totalLoad
-      M_A = -momentAboutA
-      R_B = 0
+      R_A = totalLoad; M_A = -momentAboutA; R_B = 0
     } else if (rightFixed) {
       R_A = 0; M_A = 0; R_B = 0
     } else {
@@ -84,17 +83,10 @@ export default function MomentDiagramSVG({
   function M_analytic(x) {
     let M = M_A + R_A * x
     for (const load of udl) {
-      const q_i = load.q
-      const xs  = load.xStart ?? 0
-      const xe  = load.xEnd   ?? Ltot
-      if (x > xs) {
-        const a = Math.min(x, xe) - xs
-        M -= q_i * a * (x - xs - a / 2)
-      }
+      const q_i = load.q, xs = load.xStart ?? 0, xe = load.xEnd ?? Ltot
+      if (x > xs) { const a = Math.min(x, xe) - xs; M -= q_i * a * (x - xs - a / 2) }
     }
-    for (const { P, x: xP } of pointLoads) {
-      if (x > xP) M -= P * (x - xP)
-    }
+    for (const { P, x: xP } of pointLoads) { if (x > xP) M -= P * (x - xP) }
     if (overhang > 0 && x > L) M += R_B * (x - L)
     return M
   }
@@ -102,19 +94,15 @@ export default function MomentDiagramSVG({
   function V_analytic(x) {
     let V = R_A
     for (const load of udl) {
-      const q_i = load.q
-      const xs  = load.xStart ?? 0
-      const xe  = load.xEnd   ?? Ltot
+      const q_i = load.q, xs = load.xStart ?? 0, xe = load.xEnd ?? Ltot
       if (x > xs) V -= q_i * (Math.min(x, xe) - xs)
     }
-    for (const { P, x: xP } of pointLoads) {
-      if (x > xP) V -= P
-    }
+    for (const { P, x: xP } of pointLoads) { if (x > xP) V -= P }
     if (overhang > 0 && x > L) V += R_B
     return V
   }
 
-  // ── Sample arrays: from precomputed or analytic ────────────────────────────
+  // ── Sample arrays ──────────────────────────────────────────────────────────
   let mXs, mVals, vXs, vVals
   if (precomputed) {
     ;({ mXs, mVals, vXs, vVals } = precomputed)
@@ -123,10 +111,7 @@ export default function MomentDiagramSVG({
     const grid = Array.from({ length: N + 1 }, (_, i) => (i / N) * Ltot)
     const keyXs = [0, Ltot, ...pointLoads.map(pl => pl.x)]
     if (overhang > 0) keyXs.push(L)
-    if (divisions) {
-      let cx = 0
-      divisions.forEach(d => { cx += d; keyXs.push(cx) })
-    }
+    if (divisions) { let cx = 0; divisions.forEach(d => { cx += d; keyXs.push(cx) }) }
     mXs = [...new Set([...grid, ...keyXs])].sort((a, b) => a - b)
     const eps = 1e-6
     vXs = [...new Set([
@@ -138,46 +123,53 @@ export default function MomentDiagramSVG({
     vVals = vXs.map(V_analytic)
   }
 
-  // Deflection data (only from precomputed)
+  // ── Deflection data ────────────────────────────────────────────────────────
   const deflXs   = (showDeflection && precomputed?.deflXs)  || null
   const deflVals = (showDeflection && precomputed?.deflVals) || null
   const hasDefl  = !!(deflXs && deflVals && deflVals.length > 0)
 
-  // When deflection is shown, always show shear too
-  const showV = showShear || hasDefl
+  // ── Support node x-positions (metres) ─────────────────────────────────────
+  // In precomputed mode, nodes array from DSM. In analytic mode, [0, L].
+  const supportXm = precomputed?.nodes ?? [0, L + overhang]
 
-  // ── Moment range → dynamic geometry ───────────────────────────────────────
+  // ── Geometry ───────────────────────────────────────────────────────────────
+  const W = 520
+  const x0 = 70, x1 = 450, beamLen = x1 - x0
+  const topPad     = 28
+  const divLabelH  = divisions ? 18 : 0
+
   const M_pos   = Math.max(0, ...mVals)
   const M_neg   = Math.min(0, ...mVals)
   const M_range = (M_pos - M_neg) || 1
 
-  const mH      = 110
-  const M_scale = mH / M_range
-  const mAboveH = (-M_neg) * M_scale
-  const mBelowH = M_pos   * M_scale
+  // Moment panel: only allocate height when shown
+  const mH      = showMoment ? 110 : 0
+  const M_scale = mH > 0 ? mH / M_range : 0
+  const mAboveH = mH > 0 ? (-M_neg) * M_scale : 0
+  const mBelowH = mH > 0 ? M_pos   * M_scale : 0
 
-  const W          = 520
-  const x0 = 70, x1 = 450, beamLen = x1 - x0
-  const topPad     = 28
-  const divLabelH  = divisions ? 18 : 0
-  const beamY      = topPad + divLabelH + mAboveH
+  const beamY = topPad + divLabelH + mAboveH
 
+  // Shear panel
   const gap        = 36
   const vH         = 80
   const shearBaseY = beamY + mBelowH + gap + vH / 2
 
-  const dflH      = 60
-  const gap2      = 30
-  const dflBaseY  = shearBaseY + vH / 2 + gap2 + dflH / 2
+  // Deflection panel
+  const dflH     = 60
+  const gap2     = 30
+  const dflBaseY = showShear
+    ? shearBaseY + vH / 2 + gap2 + dflH / 2
+    : beamY + mBelowH + gap + dflH / 2
 
   const H = hasDefl
     ? dflBaseY + dflH / 2 + 28
-    : showV
+    : showShear
       ? shearBaseY + vH / 2 + 22
-      : beamY + mBelowH + 30
+      : beamY + mBelowH + (showMoment ? 30 : 16)
 
-  const toSvgX = x  => x0 + (x / Ltot) * beamLen
-  const toSvgY = M  => beamY + M * M_scale
+  const toSvgX = x => x0 + (x / Ltot) * beamLen
+  const toSvgY = M => beamY + M * M_scale
 
   // ── SVG paths ──────────────────────────────────────────────────────────────
   const mPath = [
@@ -208,14 +200,12 @@ export default function MomentDiagramSVG({
   const M_peak    = mVals[M_peak_i]
   const M_peak_sx = toSvgX(mXs[M_peak_i])
   const M_peak_sy = toSvgY(M_peak)
-  const peakOff   = M_peak >= 0 ? 24 : -14
 
   const M_sec_val  = M_peak >= 0 ? M_neg : M_pos
   const showSecond = M_pos > 0.5 && M_neg < -0.5 && Math.abs(M_sec_val) > 0.1 * M_abs_max
   const M_sec_i    = M_peak >= 0 ? mVals.indexOf(M_neg) : mVals.indexOf(M_pos)
   const M_sec_sx   = showSecond ? toSvgX(mXs[M_sec_i]) : 0
   const M_sec_sy   = showSecond ? toSvgY(M_sec_val)     : 0
-  const secOff     = M_sec_val >= 0 ? 24 : -14
 
   const V_max_i = vVals.indexOf(Math.max(...vVals))
   const V_min_i = vVals.indexOf(Math.min(...vVals))
@@ -225,6 +215,19 @@ export default function MomentDiagramSVG({
   const defl_peak    = hasDefl ? deflVals[defl_peak_i] : 0
   const defl_peak_sx = hasDefl ? toSvgX(deflXs[defl_peak_i]) : 0
   const defl_peak_sy = hasDefl ? dflBaseY + defl_peak * dfl_scale : 0
+
+  // ── Support marker helper ──────────────────────────────────────────────────
+  function SupportMarks({ baseY }) {
+    const s = 4.5  // half-width of triangle
+    return supportXm.map((xm, i) => {
+      const sx = toSvgX(xm)
+      return (
+        <polygon key={i}
+          points={`${sx},${baseY} ${sx - s},${baseY + s * 1.7} ${sx + s},${baseY + s * 1.7}`}
+          fill="#374151" />
+      )
+    })
+  }
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ fontFamily: 'sans-serif' }}>
@@ -254,27 +257,34 @@ export default function MomentDiagramSVG({
           stroke="#6b7280" strokeWidth="1.5" />
       )}
 
-      {/* ── Beam reference line ── */}
+      {/* ── Beam reference line + label ── */}
       <line x1={x0} y1={beamY} x2={x1} y2={beamY} stroke="#374151" strokeWidth="2" />
-      <text x={x0 - 6} y={beamY + 4} textAnchor="end" fontSize="10" fill="#374151">M</text>
+      {showMoment && (
+        <text x={x0 - 6} y={beamY + 4} textAnchor="end" fontSize="10" fill="#374151">M</text>
+      )}
+
+      {/* ── Support markers on beam baseline ── */}
+      <SupportMarks baseY={beamY} />
 
       {/* ── Zero line (only when both sagging and hogging) ── */}
-      {M_pos > 0 && M_neg < 0 && (
+      {showMoment && M_pos > 0 && M_neg < 0 && (
         <line x1={x0} y1={beamY} x2={x1} y2={beamY}
           stroke="#9ca3af" strokeWidth="1" strokeDasharray="4,3" />
       )}
 
       {/* ── Moment diagram ── */}
-      <path d={mPath} fill="#bfdbfe" stroke="#2563eb" strokeWidth="1.5"
-        fillRule="evenodd" opacity="0.92" />
+      {showMoment && (
+        <path d={mPath} fill="#bfdbfe" stroke="#2563eb" strokeWidth="1.5"
+          fillRule="evenodd" opacity="0.92" />
+      )}
 
-      {/* ── Peak moment annotation ── */}
-      {showPeakAnnotations && (
+      {/* ── Peak moment annotations ── */}
+      {showMoment && showPeakAnnotations && (
         <>
           <line x1={M_peak_sx} y1={M_peak_sy}
             x2={M_peak_sx} y2={M_peak_sy + (M_peak >= 0 ? 12 : -12)}
             stroke="#1d4ed8" strokeWidth="1" strokeDasharray="3,2" />
-          <text x={M_peak_sx} y={M_peak_sy + peakOff}
+          <text x={M_peak_sx} y={M_peak_sy + (M_peak >= 0 ? 24 : -14)}
             textAnchor="middle" fontSize="11" fill="#1d4ed8" fontWeight="600">
             {M_peak.toFixed(1)} kNm
           </text>
@@ -283,7 +293,7 @@ export default function MomentDiagramSVG({
               <line x1={M_sec_sx} y1={M_sec_sy}
                 x2={M_sec_sx} y2={M_sec_sy + (M_sec_val >= 0 ? 12 : -12)}
                 stroke="#1d4ed8" strokeWidth="1" strokeDasharray="3,2" />
-              <text x={M_sec_sx} y={M_sec_sy + secOff}
+              <text x={M_sec_sx} y={M_sec_sy + (M_sec_val >= 0 ? 24 : -14)}
                 textAnchor="middle" fontSize="11" fill="#1d4ed8" fontWeight="600">
                 {M_sec_val.toFixed(1)} kNm
               </text>
@@ -293,16 +303,15 @@ export default function MomentDiagramSVG({
       )}
 
       {/* ── Shear force diagram ── */}
-      {showV && (
+      {showShear && (
         <g>
           <line x1={x0} y1={shearBaseY} x2={x1} y2={shearBaseY}
             stroke="#9ca3af" strokeWidth="1" strokeDasharray="4,3" />
-          <text x={x0 - 6} y={shearBaseY + 4}      textAnchor="end" fontSize="10" fill="#9ca3af">0</text>
+          <text x={x0 - 6} y={shearBaseY + 4}         textAnchor="end" fontSize="10" fill="#9ca3af">0</text>
           <text x={x0 - 6} y={shearBaseY - vH/2 + 10} textAnchor="end" fontSize="10" fill="#374151">V</text>
-
+          <SupportMarks baseY={shearBaseY} />
           <path d={vPath} fill="#fef3c7" stroke="#d97706" strokeWidth="1.5"
             fillRule="evenodd" opacity="0.92" />
-
           <text x={toSvgX(vXs[V_max_i])} y={shearBaseY - vVals[V_max_i] * V_scale - 5}
             textAnchor="middle" fontSize="11" fill="#b45309" fontWeight="600">
             {vVals[V_max_i].toFixed(1)} kN
@@ -319,13 +328,11 @@ export default function MomentDiagramSVG({
         <g>
           <line x1={x0} y1={dflBaseY} x2={x1} y2={dflBaseY}
             stroke="#9ca3af" strokeWidth="1" strokeDasharray="4,3" />
-          <text x={x0 - 6} y={dflBaseY + 4}          textAnchor="end" fontSize="10" fill="#9ca3af">0</text>
+          <text x={x0 - 6} y={dflBaseY + 4}           textAnchor="end" fontSize="10" fill="#9ca3af">0</text>
           <text x={x0 - 6} y={dflBaseY - dflH/2 + 10} textAnchor="end" fontSize="10" fill="#374151">v</text>
-
+          <SupportMarks baseY={dflBaseY} />
           <path d={deflPath} fill="#d1fae5" stroke="#059669" strokeWidth="1.5"
             fillRule="evenodd" opacity="0.92" />
-
-          {/* Peak deflection annotation */}
           <line x1={defl_peak_sx} y1={defl_peak_sy}
             x2={defl_peak_sx} y2={defl_peak_sy + (defl_peak >= 0 ? 12 : -12)}
             stroke="#059669" strokeWidth="1" strokeDasharray="3,2" />

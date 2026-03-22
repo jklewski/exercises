@@ -1,4 +1,4 @@
-import { IPE_SECTIONS } from '../data/ipe-sections.js'
+import { IPE_SECTIONS } from '../data/sections.js'
 import { STEEL, LOAD_FACTORS } from '../data/materials.js'
 
 const section  = IPE_SECTIONS['IPE360']
@@ -37,7 +37,7 @@ export const exercise26a = {
           ],
         },
       },
-      {type: 'ipe-section',
+      {type: 'steel-section',
         props:  {h: 360, b: 170, tf: 12.7, tw: 8},
       }
     ],
