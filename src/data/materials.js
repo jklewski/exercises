@@ -42,12 +42,13 @@ export const GLULAM = {
 }
 
 // ── Solid timber (EN 338) ─────────────────────────────────────────────────
+// fmk=bending, fck=compressive parallel, fvk=shear, E0mean, E005 (5th pct), gamma_M, beta_c
 export const TIMBER = {
-  C14: { fmk: 14, fvk: 3.0, E0mean:  7000, rho_k: 290, gamma_M: 1.3 },
-  C16: { fmk: 16, fvk: 3.2, E0mean:  8000, rho_k: 310, gamma_M: 1.3 },
-  C18: { fmk: 18, fvk: 3.4, E0mean:  9000, rho_k: 320, gamma_M: 1.3 },
-  C24: { fmk: 24, fvk: 4.0, E0mean: 11000, rho_k: 350, gamma_M: 1.3 },
-  C30: { fmk: 30, fvk: 4.0, E0mean: 12000, rho_k: 380, gamma_M: 1.3 },
+  C14: { fmk: 14, fck: 16, fvk: 3.0, E0mean:  7000, E005: 4700, rho_k: 290, gamma_M: 1.3, beta_c: 0.2 },
+  C16: { fmk: 16, fck: 17, fvk: 3.2, E0mean:  8000, E005: 5400, rho_k: 310, gamma_M: 1.3, beta_c: 0.2 },
+  C18: { fmk: 18, fck: 18, fvk: 3.4, E0mean:  9000, E005: 6000, rho_k: 320, gamma_M: 1.3, beta_c: 0.2 },
+  C24: { fmk: 24, fck: 21, fvk: 4.0, E0mean: 11000, E005: 7400, rho_k: 350, gamma_M: 1.3, beta_c: 0.2 },
+  C30: { fmk: 30, fck: 23, fvk: 4.0, E0mean: 12000, E005: 8000, rho_k: 380, gamma_M: 1.3, beta_c: 0.2 },
 }
 
 // ── Load combination factors (EKS 11 / Boverket) ─────────────────────────

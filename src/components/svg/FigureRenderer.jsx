@@ -30,6 +30,7 @@ import Exercise16DiaphragmSVG         from '../../exercises/figures/Exercise16Di
 import Exercise20PlanSVG              from '../../exercises/figures/Exercise20PlanSVG.jsx'
 import ConcreteULSSVG                 from './ConcreteULSSVG.jsx'
 import ColumnSVG                      from './ColumnSVG.jsx'
+import Exercise37HouseSVG             from '../../exercises/figures/Exercise37HouseSVG.jsx'
 
 const REGISTRY = {
   'steel-section':    SteelSectionSVG,
@@ -53,6 +54,7 @@ const REGISTRY = {
   'ex20-plan':        Exercise20PlanSVG,
   'concrete-uls':     ConcreteULSSVG,
   'column':           ColumnSVG,
+  'ex37-house':       Exercise37HouseSVG,
 }
 
 export default function FigureRenderer({ figure }) {
